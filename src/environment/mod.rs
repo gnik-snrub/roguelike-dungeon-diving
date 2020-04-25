@@ -37,7 +37,7 @@ pub const COLOR_LIGHT_WALL: Color = Color { r: 112, g: 112, b: 112 };
 pub const COLOR_DARK_GROUND: Color = Color { r: 84, g: 71, b: 35, };
 pub const COLOR_LIGHT_GROUND: Color = Color { r: 138, g: 122, b: 80 };
 
-type Map = Vec<Vec<Tile>>;
+pub type Map = Vec<Vec<Tile>>;
 
 pub struct Game {
     pub map: Map,
@@ -75,7 +75,7 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
         if !failed {
             // Paints room onto map tiles
             create_room(new_room, &mut map);
-            place_monsters(new_room, objects);
+            place_objects(new_room, &map, objects);
 
             // Center coordinates of the new room, will be used later
             let (new_x, new_y) = new_room.center();
@@ -110,7 +110,7 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
     map
 }
 
-fn place_monsters(room: Rect, objects: &mut Vec<Object>) {
+fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
     // Choose random number of monsters
     let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
 
@@ -119,12 +119,14 @@ fn place_monsters(room: Rect, objects: &mut Vec<Object>) {
         let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
         let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
 
-        let mut monster = if rand::random::<f32>() < 0.8 { // 80% chance to get an orc
-            Object::fire_elemental(x, y)
-        } else {
-            Object::crystal_lizard(x, y)
-        };
-
-        objects.push(monster);
+        if !Object::is_blocked(x, y, map, objects) {
+            let mut monster = if rand::random::<f32>() < 0.8 { // 80% chance to get an orc
+                Object::fire_elemental(x, y)
+            } else {
+                Object::crystal_lizard(x, y)
+            };
+            monster.alive = true;
+            objects.push(monster);
+        }
     }
 }

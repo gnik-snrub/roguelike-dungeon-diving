@@ -4,6 +4,7 @@ pub mod environment;
 
 use objects::Object;
 use environment::*;
+use controls::{ handle_keys, PlayerAction };
 
 use tcod::console::*;
 use tcod::map::Map as FovMap;
@@ -69,11 +70,11 @@ pub fn game(mut tcod: &mut Tcod) {
 
         tcod.root.flush();
 
-        let mut player = &mut objects[PLAYER];
-        previous_player_position = (player.x, player.y);
+        let player = &mut objects[PLAYER];
+        previous_player_position = objects[PLAYER].pos();
 
-        let exit = controls::handle_keys(&mut tcod, &game, &mut objects);
-        if exit { break; }
+        let player_action = handle_keys(&mut tcod, &game, &mut objects);
+        if player_action == PlayerAction::Exit { break; }
     }
 }
 
