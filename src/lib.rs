@@ -72,7 +72,7 @@ pub fn game(mut tcod: &mut Tcod) {
         let mut player = &mut objects[PLAYER];
         previous_player_position = (player.x, player.y);
 
-        let exit = controls::handle_keys(&mut tcod, &game, &mut player);
+        let exit = controls::handle_keys(&mut tcod, &game, &mut objects);
         if exit { break; }
     }
 }
