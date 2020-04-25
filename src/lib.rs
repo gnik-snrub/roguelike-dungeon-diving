@@ -80,7 +80,8 @@ pub fn game(mut tcod: &mut Tcod) {
             for object in &objects {
                 // Only if object is not player
                 if (object as *const _) != (&objects[PLAYER] as *const _) {
-                    // Monster actions go here 
+                    // Monster actions go here
+                    // This is another comment line for test purposes
                 }
             }
         }
