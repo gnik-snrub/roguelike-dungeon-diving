@@ -139,9 +139,9 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
 }
 
 // --- TO-DO ---
-// No-Dead end algorithm
-// Check to see if there are at least 2 empty tiles connected to a tile
-// If there is not at least 2, scan the map
-// Check each tile for distance away from the tile lacking connections
-// Find the tile with the shortest distance
-// Run the same algorithm to connect tunnels between them
+// No-Dead end algorithm:
+// - Check to see if there are at least 2 empty tiles connected to a tile
+// - If there is not at least 2, scan the map
+// - Check each tile for distance away from the tile lacking connections
+// - Find the tile with the shortest distance
+// - Run the same algorithm to connect tunnels between them
