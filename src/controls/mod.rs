@@ -23,19 +23,19 @@ pub fn handle_keys(tcod: &mut Tcod, game: &Game, objects: &mut [Object]) -> Play
     match (key, key.text(), player_alive) {
         // Movement keys
         ( Key { code: NumPad8, .. }, _, true) => {
-            Object::move_by(PLAYER, 0, -1, game, objects);
+            Object::player_move_or_attack(0, -1, game, objects);
             TookTurn
         },
         ( Key { code: NumPad5, .. }, _, true) => {
-            Object::move_by(PLAYER, 0, 1, game, objects);
+            Object::player_move_or_attack(0, 1, game, objects);
             TookTurn
         },
         ( Key { code: NumPad4, .. }, _, true) => {
-            Object::move_by(PLAYER, -1, 0, game, objects);
+            Object::player_move_or_attack(-1, 0, game, objects);
             TookTurn
         },
         ( Key { code: NumPad6, .. }, _, true) => {
-            Object::move_by(PLAYER, 1, 0, game, objects);
+            Object::player_move_or_attack(1, 0, game, objects);
             TookTurn
         },
 //      This code is temporarily removed, as it breaks the laptop on which it is being written.

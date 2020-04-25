@@ -38,7 +38,7 @@ impl Tcod {
 
 pub fn game(mut tcod: &mut Tcod) {
     // Creates object representing player
-    let player = Object::player();
+    let mut player = Object::player();
     let mut objects = vec![player];
 
     // Generate map to be rendered
@@ -70,11 +70,20 @@ pub fn game(mut tcod: &mut Tcod) {
 
         tcod.root.flush();
 
-        let player = &mut objects[PLAYER];
+        // Handles keys, and exits game if prompted
         previous_player_position = objects[PLAYER].pos();
-
         let player_action = handle_keys(&mut tcod, &game, &mut objects);
         if player_action == PlayerAction::Exit { break; }
+
+        // Lets monsters take their turn
+        if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
+            for object in &objects {
+                // Only if object is not player
+                if (object as *const _) != (&objects[PLAYER] as *const _) {
+                    println!("The {} growls", object.name);
+                }
+            }
+        }
     }
 }
 

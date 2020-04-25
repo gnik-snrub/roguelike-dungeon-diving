@@ -1,3 +1,4 @@
+use crate::PLAYER;
 use crate::environment::{ Game, Map };
 
 use tcod::colors::*;
@@ -60,13 +61,32 @@ impl Object {
         self.y = y;
     }
 
-    // -------------------------------------
-    // -----FUNCTION CREATES NEW PLAYER-----
-    // -------------------------------------
+    // ----------------------------------
+    // -----PLAYER RELATED FUNCTIONS-----
+    // ----------------------------------
     pub fn player() -> Object {
         let mut player = Object::new(0, 0, '@', tcod::colors::WHITE, "Player", true);
         player.alive = true;
         player
+    }
+
+    pub fn player_move_or_attack(dx: i32, dy: i32, game: &Game, objects: &mut [Object]) {
+        // The coordinates the player is moving to / attacking
+        let x = objects[PLAYER].x + dx;
+        let y = objects[PLAYER].y + dy;
+
+        // Try to find an attackable object there
+        let target_id = objects.iter().position(|object| object.pos() == (x, y));
+
+        // Attack target if found, otherwise move
+        match target_id {
+            Some(target_id) => {
+                println!("The {} resists your futile attacks!", objects[target_id].name);
+            },
+            None => {
+                Object::move_by(PLAYER, dx, dy, &game, objects);
+            }
+        }
     }
 
     // --------------------------------------
