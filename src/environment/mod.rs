@@ -26,10 +26,10 @@ pub const MAP_WIDTH: i32 = 80;
 pub const MAP_HEIGHT: i32 = 45;
 
 // Dungeon room limitations
-const ROOM_MAX_SIZE: i32 = 10;
-const ROOM_MIN_SIZE: i32 = 5;
+const ROOM_MAX_SIZE: i32 = 12;
+const ROOM_MIN_SIZE: i32 = 4;
 const MAX_ROOMS: i32 = 20;
-const MAX_ROOM_MONSTERS: i32 = 3;
+const MAX_ROOM_MONSTERS: i32 = 4;
 
 // Tile colors
 pub const COLOR_DARK_WALL: Color = Color { r: 28, g: 28, b: 28, };
@@ -53,10 +53,17 @@ impl Game {
 }
 
 pub fn make_map(objects: &mut Vec<Object>) -> Map {
-    // fill map with "unblocked tiles
+    // Fill map with wall tiles
     let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
-    let mut rooms = vec![];
+    //Creates vector to store rooms
+    let mut rooms: Vec<Rect> = vec![];
+
+    // Determines dungeon gen path to follow
+    // <0.5 should appear more ruinous
+    // >0.5 should appear more designed, and constructed
+    let world_path = rand::random::<f32>();
+    println!("World gen = {}", world_path);
 
     for _ in 0..MAX_ROOMS {
         // Random width and height
@@ -71,8 +78,8 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
         // Run through the other rooms and see if they interact with this one
         let failed = rooms.iter().any(|other_room| new_room.intersects_with(other_room));
 
-        // If valid room, it runs this code.
-        if !failed {
+        // Adds in rooms according to world path value
+        if (world_path < 0.5 && (!failed || failed)) || (world_path > 0.5 && !failed) {
             // Paints room onto map tiles
             create_room(new_room, &mut map);
             place_objects(new_room, &map, objects);
