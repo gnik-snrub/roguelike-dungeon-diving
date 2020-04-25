@@ -1,0 +1,130 @@
+pub mod tiles;
+pub mod dungeon;
+
+use crate::PLAYER;
+use tiles::Tile;
+use dungeon::{
+    Rect,
+    create_room,
+    create_h_tunnel,
+    create_v_tunnel };
+
+use crate::objects::Object;
+
+use rand::Rng;
+
+use tcod::colors::*;
+use tcod::map::FovAlgorithm;
+
+// Determines Field-Of-View
+pub const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic; // Default FOV Algorithm
+pub const FOV_LIGHT_WALLS: bool = true;
+pub const TORCH_RADIUS: i32 = 10;
+
+// Size of the map
+pub const MAP_WIDTH: i32 = 80;
+pub const MAP_HEIGHT: i32 = 45;
+
+// Dungeon room limitations
+const ROOM_MAX_SIZE: i32 = 10;
+const ROOM_MIN_SIZE: i32 = 5;
+const MAX_ROOMS: i32 = 20;
+const MAX_ROOM_MONSTERS: i32 = 3;
+
+// Tile colors
+pub const COLOR_DARK_WALL: Color = Color { r: 28, g: 28, b: 28, };
+pub const COLOR_LIGHT_WALL: Color = Color { r: 112, g: 112, b: 112 };
+pub const COLOR_DARK_GROUND: Color = Color { r: 84, g: 71, b: 35, };
+pub const COLOR_LIGHT_GROUND: Color = Color { r: 138, g: 122, b: 80 };
+
+type Map = Vec<Vec<Tile>>;
+
+pub struct Game {
+    pub map: Map,
+}
+
+impl Game {
+    pub fn new(mut objects: &mut Vec<Object>) -> Game {
+        let map = make_map(&mut objects);
+        Game {
+            map: map,
+        }
+    }
+}
+
+pub fn make_map(objects: &mut Vec<Object>) -> Map {
+    // fill map with "unblocked tiles
+    let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
+
+    let mut rooms = vec![];
+
+    for _ in 0..MAX_ROOMS {
+        // Random width and height
+        let w = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
+        let h = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
+        // Random position without going outside the map boundaries
+        let x = rand::thread_rng().gen_range(0, MAP_WIDTH - w);
+        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT - h);
+
+        let new_room = Rect::new(x, y, w, h);
+
+        // Run through the other rooms and see if they interact with this one
+        let failed = rooms.iter().any(|other_room| new_room.intersects_with(other_room));
+
+        // If valid room, it runs this code.
+        if !failed {
+            // Paints room onto map tiles
+            create_room(new_room, &mut map);
+            place_monsters(new_room, objects);
+
+            // Center coordinates of the new room, will be used later
+            let (new_x, new_y) = new_room.center();
+
+            if rooms.is_empty() {
+
+                // This is the first room, where the player starts at
+                objects[PLAYER].set_pos(new_x, new_y);
+
+            } else {
+
+                // All rooms after the first connect to the previous room with a tunnel
+                // Center coordinates of the previous room
+                let (prev_x, prev_y) = rooms[rooms.len() - 1].center();
+
+                // Arbitrarily decides to begin with either a vertical, or horizontal tunnel
+                if rand::random() {
+                    // Horizontal tunnel first
+                    create_h_tunnel(prev_x, new_x, prev_y, &mut map);
+                    create_v_tunnel(prev_y, new_y, new_x, &mut map);
+                } else {
+                    // Vertical tunnel first
+                    create_v_tunnel(prev_y, new_y, prev_x, &mut map);
+                    create_h_tunnel(prev_x, new_x, new_y, &mut map);
+                }
+            }
+        }
+
+        rooms.push(new_room)
+    }
+
+    map
+}
+
+fn place_monsters(room: Rect, objects: &mut Vec<Object>) {
+    // Choose random number of monsters
+    let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
+
+    for _ in 0..num_monsters {
+        // Choose random spot for the monster
+        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
+        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
+
+        let mut monster = if rand::random::<f32>() < 0.8 { // 80% chance to get an orc
+            Object::fire_elemental(x, y)
+        } else {
+            Object::crystal_lizard(x, y)
+        };
+
+        objects.push(monster);
+    }
+}
