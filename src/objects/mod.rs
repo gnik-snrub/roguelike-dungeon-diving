@@ -68,10 +68,43 @@ impl Object {
         self.y = y;
     }
 
+    // Moves unit in a direction if the tile isn't blocked
     pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
         let (x, y) = objects[id].pos();
         if !Object::is_blocked(x + dx, y + dy, &map, objects) {
             objects[id].set_pos(x + dx, y + dy);
+        }
+    }
+
+    // Function to allow fighter-enabled objects to take damage
+    pub fn take_damage(&mut self, damage: i32) {
+        // Apply damage if possible.
+        if let Some(fighter) = self.fighter.as_mut() {
+            if damage > 0 {
+                fighter.hp -= damage;
+            }
+        }
+    }
+
+    // Function to allow fighter-enabled objects to attack other fighter-enabled objects.
+    pub fn attack(&mut self, target: &mut Object) {
+        // Damage formula.
+        let damage = (self.fighter.map_or(0, |f| f.power) /
+            target.fighter.map_or(0, |f| f.defense)) *
+            ((self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) / 2.0) /
+             (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) * 0.25)).round() as i32;
+        if damage > 0 {
+            // Target takes damage.
+            println!(
+                "{} attacks {} for {} damage!",
+                self.name, target.name, damage
+            );
+            target.take_damage(damage);
+        } else {
+            println!(
+                "{} attacks {} but is has no effect!",
+                self.name, target.name
+            );
         }
     }
 
