@@ -40,12 +40,12 @@ pub fn handle_keys(tcod: &mut Tcod, game: &Game, objects: &mut [Object]) -> Play
         },
 //      This code is temporarily removed, as it breaks the laptop on which it is being written.
 //      Note: The fact that it breaks this specific laptop is proof that it functions correctly.
-        ( Key { code: Enter, alt: true, .. }, _, _, ) => {
+//        ( Key { code: Enter, alt: true, .. }, _, _, ) => {
             // Alt+Enter: Toggles fullscreen
-            let fullscreen = tcod.root.is_fullscreen();
-            tcod.root.set_fullscreen(!fullscreen);
-            DidntTakeTurn
-        },
+//            let fullscreen = tcod.root.is_fullscreen();
+//            tcod.root.set_fullscreen(!fullscreen);
+//            DidntTakeTurn
+//        },
         ( Key { code: Escape, .. }, _, _) => Exit, // Exits game
 
         _ => DidntTakeTurn,

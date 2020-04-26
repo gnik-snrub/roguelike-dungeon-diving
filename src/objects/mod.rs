@@ -1,9 +1,15 @@
 use crate::PLAYER;
 use crate::environment::{ Game, Map };
 
+pub mod npc;
+pub mod npc::ai;
+use npc::*;
+use ai::*;
+
 use tcod::colors::*;
 use tcod::console::*;
 
+// Object struct definition.
 #[derive(Debug)]
 pub struct Object {
     pub x: i32,
@@ -13,6 +19,8 @@ pub struct Object {
     pub name: String,
     pub blocks: bool,
     pub alive: bool,
+    pub fighter: Option<Fighter>,
+    pub ai: Option<Ai>,
 }
 
 impl Object {
@@ -28,9 +36,12 @@ impl Object {
             name: name.into(),
             blocks: blocks,
             alive: false,
+            fighter: None,
+            ai: None,
         }
     }
 
+    // Places object on the screen
     pub fn draw(&self, con: &mut dyn Console) {
         con.set_default_foreground(self.color);
         con.put_char(self.x, self.y, self.char, BackgroundFlag::None);
@@ -67,6 +78,12 @@ impl Object {
     pub fn player() -> Object {
         let mut player = Object::new(0, 0, '@', tcod::colors::WHITE, "Player", true);
         player.alive = true;
+        player.fighter = Some(Fighter {
+            max_hp: 30,
+            hp: 30,
+            defense: 2,
+            power: 5,
+        });
         player
     }
 
@@ -93,10 +110,26 @@ impl Object {
     // -----LIST OF MONSTERS STARTS HERE-----
     // --------------------------------------
     pub fn fire_elemental(x: i32, y: i32) -> Object {
-        Object::new(x, y, 'f', tcod::colors::ORANGE, "Fire Elemental", true)
+        let fire_elemental = Object::new(x, y, 'f', tcod::colors::ORANGE, "Fire Elemental", true);
+        fire_elemental.fighter = Some(Fighter {
+            max_hp: 10,
+            hp: 10,
+            defense: 0,
+            power: 4,
+        });
+        fire_elemental.ai = Some(Ai::Basic);
+        fire_elemental
     }
 
     pub fn crystal_lizard(x: i32, y: i32) -> Object {
-        Object::new(x, y, 'C', tcod::colors::LIGHTER_SKY, "Crystal Lizard", true)
+        let crystal_lizard = Object::new(x, y, 'C', tcod::colors::LIGHTER_SKY, "Crystal Lizard", true);
+        crystal_lizard.fighter = Some(Fighter {
+            max_hp: 16,
+            hp: 16,
+            defense: 3,
+            power: 3.
+        });
+        crystal_lizard.ai = Some(Ai::Basic);
+        crystal_lizard
     }
 }
