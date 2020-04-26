@@ -77,11 +77,9 @@ pub fn game(mut tcod: &mut Tcod) {
 
         // Lets monsters take their turn
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
-            for object in &objects {
-                // Only if object is not player
-                if (object as *const _) != (&objects[PLAYER] as *const _) {
-                    // Monster actions go here
-                    // This is another comment line for test purposes
+            for id in 0..objects.len() {
+                if objects[id].ai.is_some() {
+                    Object::ai_take_turn(id, &tcod, &game, &mut objects);
                 }
             }
         }

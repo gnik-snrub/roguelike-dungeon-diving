@@ -2,8 +2,8 @@ pub mod ai;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Fighter {
-    max_hp: i32,
-    hp: i32,
-    defense: i32,
-    power: i32,
+    pub max_hp: i32,
+    pub hp: i32,
+    pub defense: i32,
+    pub power: i32,
 }
