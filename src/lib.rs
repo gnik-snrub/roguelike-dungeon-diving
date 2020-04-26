@@ -38,7 +38,7 @@ impl Tcod {
 
 pub fn game(mut tcod: &mut Tcod) {
     // Creates object representing player
-    let mut player = Object::player();
+    let player = Object::player();
     let mut objects = vec![player];
 
     // Generate map to be rendered

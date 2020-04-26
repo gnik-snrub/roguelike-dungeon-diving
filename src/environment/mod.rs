@@ -3,11 +3,7 @@ pub mod dungeon;
 
 use crate::PLAYER;
 use tiles::Tile;
-use dungeon::{
-    Rect,
-    create_room,
-    create_h_tunnel,
-    create_v_tunnel };
+use dungeon::*;
 
 use crate::objects::Object;
 
