@@ -24,8 +24,8 @@ pub const MAP_HEIGHT: i32 = 45;
 // Dungeon room limitations
 const ROOM_MAX_SIZE: i32 = 12;
 const ROOM_MIN_SIZE: i32 = 4;
-const MAX_ROOMS: i32 = 20;
-const MAX_ROOM_MONSTERS: i32 = 4;
+const MAX_ROOMS: i32 = 18;
+const MAX_ROOM_MONSTERS: i32 = 3;
 
 // Tile colors
 pub const COLOR_DARK_WALL: Color = Color { r: 28, g: 28, b: 28, };

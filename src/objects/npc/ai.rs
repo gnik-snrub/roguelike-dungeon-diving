@@ -8,7 +8,7 @@ pub enum Ai {
 }
 
 impl Object {
-    pub fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects: &mut [Object]) {
+    fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects: &mut [Object]) {
         // Vector from this object to the target, and the distance.
         let dx = target_x - objects[id].x;
         let dy = target_y - objects[id].y;
@@ -21,7 +21,7 @@ impl Object {
         Object::move_by(id, dx, dy, map, objects);
     }
 
-    pub fn distance_to(&self, other: &Object) -> f32 {
+    fn distance_to(&self, other: &Object) -> f32 {
         let dx = other.x - self.x;
         let dy = other.y - self.y;
         ((dx.pow(2) + dy.pow(2)) as f32).sqrt()

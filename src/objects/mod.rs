@@ -80,11 +80,19 @@ impl Object {
     }
 
     // Function to allow fighter-enabled objects to take damage
-    pub fn take_damage(&mut self, damage: i32) {
+    fn take_damage(&mut self, damage: i32) {
         // Apply damage if possible.
         if let Some(fighter) = self.fighter.as_mut() {
             if damage > 0 {
                 fighter.hp -= damage;
+            }
+        }
+
+        // Check for death, and possibly call death function.
+        if let Some(fighter) = self.fighter {
+            if fighter.hp <= 0 {
+                self.alive = false;
+                fighter.on_death.callback(self);
             }
         }
     }
@@ -105,12 +113,27 @@ impl Object {
                 "{} attacks {} for {} damage!",
                 self.name, target.name, damage
             );
+            println!(
+                "Attack: {}\nDefense: {}\nLevel_mod: {}\nDamage: {}",
+                attack, defense, level_mod, damage
+            );
             target.take_damage(damage);
         } else {
             println!(
                 "{} attacks {} but is has no effect!",
                 self.name, target.name
             );
+        }
+    }
+
+    fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut T, &mut T) {
+        assert!(first_index != second_index);
+        let split_at_index = max(first_index, second_index);
+        let (first_slice, second_slice) = items.split_at_mut(split_at_index);
+        if first_index < second_index {
+            (&mut first_slice[first_index], &mut second_slice[0])
+        } else {
+            (&mut second_slice[0], &mut first_slice[second_index])
         }
     }
 
@@ -127,6 +150,7 @@ impl Object {
             hp: 30,
             defense: 2,
             power: 5,
+            on_death: DeathCallback::Player,
         });
         player
     }
@@ -137,7 +161,7 @@ impl Object {
         let y = objects[PLAYER].y + dy;
 
         // Try to find an attackable object there
-        let target_id = objects.iter().position(|object| object.pos() == (x, y));
+        let target_id = objects.iter().position(|object| object.fighter.is_some() && object.pos() == (x, y));
 
         // Attack target if found, otherwise move
         match target_id {
@@ -148,17 +172,6 @@ impl Object {
             None => {
                 Object::move_by(PLAYER, dx, dy, &game.map, objects);
             }
-        }
-    }
-
-    pub fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut T, &mut T) {
-        assert!(first_index != second_index);
-        let split_at_index = max(first_index, second_index);
-        let (first_slice, second_slice) = items.split_at_mut(split_at_index);
-        if first_index < second_index {
-            (&mut first_slice[first_index], &mut second_slice[0])
-        } else {
-            (&mut second_slice[0], &mut first_slice[second_index])
         }
     }
 }
