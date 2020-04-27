@@ -27,7 +27,7 @@ impl Object {
         ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
     }
 
-    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, game: &Game, objects: &mut [Object]) {
+    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, game: &mut Game, objects: &mut [Object]) {
         // A basic monster takes its turn. If you can see it, it can also see you!
         let (monster_x, monster_y) = objects[monster_id].pos();
         if tcod.fov.is_in_fov(monster_x, monster_y) {
@@ -38,7 +38,7 @@ impl Object {
             } else if objects[PLAYER].fighter.unwrap().hp >= 0 {
                 // Close enough - Attack! (If player is alive)
                 let (monster, player) = Object::mut_two(monster_id, PLAYER, objects);
-                monster.attack(player);
+                monster.attack(player, game);
             }
         }
     }

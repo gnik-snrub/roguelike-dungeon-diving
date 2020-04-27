@@ -80,7 +80,7 @@ impl Object {
     }
 
     // Function to allow fighter-enabled objects to take damage
-    fn take_damage(&mut self, damage: i32) {
+    fn take_damage(&mut self, damage: i32, game: &mut Game) {
         // Apply damage if possible.
         if let Some(fighter) = self.fighter.as_mut() {
             if damage > 0 {
@@ -92,13 +92,13 @@ impl Object {
         if let Some(fighter) = self.fighter {
             if fighter.hp <= 0 {
                 self.alive = false;
-                fighter.on_death.callback(self);
+                fighter.on_death.callback(self, game);
             }
         }
     }
 
     // Function to allow fighter-enabled objects to attack other fighter-enabled objects.
-    pub fn attack(&mut self, target: &mut Object) {
+    pub fn attack(&mut self, target: &mut Object, game: &mut Game) {
         // Damage formula.
         let mut rng = rand::thread_rng();
         let attack = (self.fighter.map_or(0, |f| f.power)) as f32 + rng.gen_range(-1.0, 1.0);
@@ -109,19 +109,25 @@ impl Object {
         let damage = (attack / defense * level_mod).round() as i32;
         if damage > 0 {
             // Target takes damage.
-            println!(
-                "{} attacks {} for {} damage!",
-                self.name, target.name, damage
+            game.messages.add(
+                format!(
+                    "{} attacks {} dealing {} damage.",
+                    self.name, target.name, damage
+                ),
+                WHITE,
             );
             println!(
-                "Attack: {}\nDefense: {}\nLevel_mod: {}\nDamage: {}",
-                attack, defense, level_mod, damage
+                "{}'s attack: {}\nDefense: {}\nLevel_mod: {}\nDamage: {}",
+                self.name, attack, defense, level_mod, damage
             );
-            target.take_damage(damage);
+            target.take_damage(damage, game);
         } else {
-            println!(
-                "{} attacks {} but is has no effect!",
-                self.name, target.name
+            game.messages.add(
+                format!(
+                    "{} attacks {} but it has no effect!",
+                    self.name, target.name
+                ),
+                WHITE,
             );
         }
     }
@@ -155,7 +161,7 @@ impl Object {
         player
     }
 
-    pub fn player_move_or_attack(dx: i32, dy: i32, game: &Game, objects: &mut [Object]) {
+    pub fn player_move_or_attack(dx: i32, dy: i32, game: &mut Game, objects: &mut [Object]) {
         // The coordinates the player is moving to / attacking
         let x = objects[PLAYER].x + dx;
         let y = objects[PLAYER].y + dy;
@@ -167,7 +173,7 @@ impl Object {
         match target_id {
             Some(target_id) => {
                 let (player, target) = Object::mut_two(PLAYER, target_id, objects);
-                player.attack(target);
+                player.attack(target, game);
             },
             None => {
                 Object::move_by(PLAYER, dx, dy, &game.map, objects);

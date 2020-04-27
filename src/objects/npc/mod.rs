@@ -1,3 +1,5 @@
+use crate::environment::Game;
+
 pub mod ai;
 use ai::*;
 
@@ -56,27 +58,27 @@ pub enum DeathCallback {
 }
 
 impl DeathCallback {
-    pub fn callback(self, object: &mut Object) {
-        let callback: fn(&mut Object) = match self {
+    pub fn callback(self, object: &mut Object, game: &mut Game) {
+        let callback: fn(&mut Object, &mut Game) = match self {
             DeathCallback::Player => Object::player_death,
             DeathCallback::Monster => Object::monster_death,
         };
-        callback(object);
+        callback(object, game);
     }
 }
 
 impl Object {
-    fn player_death(player: &mut Object) {
+    fn player_death(player: &mut Object, game: &mut Game) {
         // The game ended!
-        println!("You died...");
+        game.messages.add("You died, lmao!", RED);
         player.char = '%';
         player.color = DARK_RED;
     }
 
-    fn monster_death(monster: &mut Object) {
+    fn monster_death(monster: &mut Object, game: &mut Game) {
         // Turns monster into a corpse.
         // No longer blocks, attacks, or moves.
-        println!("{} is dead!", monster.name);
+        game.messages.add(format!("{} is dead!", monster.name), ORANGE);
         monster.color = DARK_RED;
         monster.blocks = false;
         monster.fighter = None;

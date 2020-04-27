@@ -1,7 +1,7 @@
 pub mod tiles;
 pub mod dungeon;
 
-use crate::PLAYER;
+use crate::{ PLAYER, Messages };
 use tiles::Tile;
 use dungeon::*;
 
@@ -19,7 +19,7 @@ pub const TORCH_RADIUS: i32 = 10;
 
 // Size of the map
 pub const MAP_WIDTH: i32 = 80;
-pub const MAP_HEIGHT: i32 = 45;
+pub const MAP_HEIGHT: i32 = 43;
 
 // Dungeon room limitations
 const ROOM_MAX_SIZE: i32 = 12;
@@ -37,6 +37,7 @@ pub type Map = Vec<Vec<Tile>>;
 
 pub struct Game {
     pub map: Map,
+    pub messages: Messages,
 }
 
 impl Game {
@@ -44,6 +45,7 @@ impl Game {
         let map = make_map(&mut objects);
         Game {
             map: map,
+            messages: Messages::new(),
         }
     }
 }

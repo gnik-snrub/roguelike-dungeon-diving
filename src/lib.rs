@@ -15,9 +15,18 @@ const SCREEN_HEIGHT: i32 = 50;
 
 const PLAYER: usize = 0;
 
+const BAR_WIDTH: i32 = 20;
+const PANEL_HEIGHT: i32 = 7;
+const PANEL_Y: i32 = SCREEN_HEIGHT - PANEL_HEIGHT;
+
+const MSG_X: i32 = BAR_WIDTH + 2;
+const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
+const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
+
 pub struct Tcod {
     pub root: Root,
     pub con: Offscreen,
+    pub panel: Offscreen,
     pub fov: FovMap,
 }
 
@@ -31,9 +40,10 @@ impl Tcod {
             .init();
 
         let con = Offscreen::new(MAP_WIDTH, MAP_HEIGHT);
+        let panel = Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT);
         let fov = FovMap::new(MAP_WIDTH, MAP_HEIGHT);
 
-        Tcod { root, con, fov }
+        Tcod { root, con, panel, fov }
     }
 }
 
@@ -56,6 +66,12 @@ pub fn game(mut tcod: &mut Tcod) {
         }
     }
 
+    // Intro message
+    game.messages.add(
+        "Welcome Stranger! Prepare to perish in the Tombs of the Ancient Kinds.",
+        RED,
+    );
+
     // Force FOV "recompute" first time through the game loop
     let mut previous_player_position = (-1, -1);
 
@@ -73,14 +89,14 @@ pub fn game(mut tcod: &mut Tcod) {
 
         // Handles keys, and exits game if prompted
         previous_player_position = objects[PLAYER].pos();
-        let player_action = handle_keys(&mut tcod, &game, &mut objects);
+        let player_action = handle_keys(&mut tcod, &mut game, &mut objects);
         if player_action == PlayerAction::Exit { break; }
 
         // Lets monsters take their turn
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 0..objects.len() {
                 if objects[id].ai.is_some() {
-                    Object::ai_take_turn(id, &tcod, &game, &mut objects);
+                    Object::ai_take_turn(id, &tcod, &mut game, &mut objects);
                 }
             }
         }
@@ -149,19 +165,106 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
         1.0,
     );
 
+    // Prepares the GUI panel.
+    tcod.panel.set_default_background(BLACK);
+    tcod.panel.clear();
+
+    // Print the game messages, line by line.
+    let mut y = MSG_HEIGHT as i32;
+    for &(ref msg, color) in game.messages.iter().rev() {
+        let msg_height = tcod.panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
+        y -= msg_height;
+        if y < 0 {
+            break;
+        }
+        tcod.panel.set_default_foreground(color);
+        tcod.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
+    }
+
     // Show the player's stats.
-    tcod.root.set_default_foreground(WHITE);
-    if let Some(fighter) = objects[PLAYER].fighter {
-        tcod.root.print_ex(
-            1,
-            SCREEN_HEIGHT - 2,
+    let hp = objects[PLAYER].fighter.unwrap().hp;
+    let max_hp = objects[PLAYER].fighter.unwrap().max_hp;
+    render_bar(
+        &mut tcod.panel,
+        1,
+        1,
+        BAR_WIDTH,
+        "HP",
+        hp,
+        max_hp,
+        LIGHT_RED,
+        DARKER_RED,
+    );
+
+    // Blit the contents of 'panel' to the root console.
+    blit(
+        &tcod.panel,
+        (0, 0),
+        (SCREEN_WIDTH, PANEL_HEIGHT),
+        &mut tcod.root,
+        (0, PANEL_Y),
+        1.0,
+        1.0,
+    );
+}
+
+// Renders a bar of some sort.
+fn render_bar(
+    panel: &mut Offscreen,
+    x: i32,
+    y: i32,
+    total_width: i32,
+    name: &str,
+    value: i32,
+    maximum: i32,
+    bar_color: Color,
+    back_color: Color,)
+    {
+        // Calculates the width of the bar.
+        let bar_width = (value as f32 / maximum as f32 * total_width as f32) as i32;
+
+        // Renders background of bar.
+        panel.set_default_background(back_color);
+        panel.rect(x, y, total_width, 1, false, BackgroundFlag::Screen);
+
+        // Renders the bar over the top of it.
+        panel.set_default_background(bar_color);
+        if bar_width > 0 {
+            panel.rect(x, y, bar_width, 1, false, BackgroundFlag::Screen);
+        }
+
+        //Centered text with relevant values.
+        panel.set_default_foreground(WHITE);
+        panel.print_ex(
+            x + total_width / 2,
+            y,
             BackgroundFlag::None,
-            TextAlignment::Left,
-            format!("HP: {}/{} ", fighter.hp, fighter.max_hp),
+            TextAlignment::Center,
+            &format!("{}: {}/{}", name, value, maximum),
         );
+}
+
+pub struct Messages {
+    messages: Vec<(String, Color)>,
+}
+
+impl Messages {
+    pub fn new() -> Messages {
+        Messages { messages: vec![] }
+    }
+
+    // Add the new message as a tuple containing the text and the color.
+    pub fn add<T: Into<String>>(&mut self, message: T, color: Color) {
+        self.messages.push((message.into(), color));
+    }
+
+    // Creates a 'DoubleEndedIterator' over the messages.
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &(String, Color)> {
+        self.messages.iter()
     }
 }
 
+// DEBUG FUNCTIONS BELOW HERE
 pub fn debug_render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
     // go through all tiles, and set their background color
     for y in 0..MAP_HEIGHT {
