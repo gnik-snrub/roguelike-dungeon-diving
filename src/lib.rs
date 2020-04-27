@@ -7,6 +7,7 @@ use environment::*;
 use controls::{ handle_keys, PlayerAction };
 
 use tcod::console::*;
+use tcod::colors::*;
 use tcod::map::Map as FovMap;
 
 const SCREEN_WIDTH: i32 = 80;
@@ -83,7 +84,6 @@ pub fn game(mut tcod: &mut Tcod) {
                 }
             }
         }
-        println!("HP: {}", objects[PLAYER].fighter.unwrap().hp);
     }
 }
 
@@ -141,6 +141,18 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
         1.0,
         1.0,
     );
+
+    // Show the player's stats.
+    tcod.root.set_default_foreground(WHITE);
+    if let Some(fighter) = objects[PLAYER].fighter {
+        tcod.root.print_ex(
+            1,
+            SCREEN_HEIGHT - 2,
+            BackgroundFlag::None,
+            TextAlignment::Left,
+            format!("HP: {}/{} ", fighter.hp, fighter.max_hp),
+        );
+    }
 }
 
 pub fn debug_render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {

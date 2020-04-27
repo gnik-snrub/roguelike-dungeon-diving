@@ -99,12 +99,11 @@ impl Object {
             (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) / 2.0) /
             (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) * 0.25);
         let damage = (attack / defense * level_mod).round() as i32;
-        println!("Attack: {}, Defense: {}, Level-Mod: {}", attack, defense, level_mod);
         if damage > 0 {
             // Target takes damage.
             println!(
-                "{} attacks {} for {} damage!\n{} now has {} HP!",
-                self.name, target.name, damage, target.name, target.fighter.unwrap().hp
+                "{} attacks {} for {} damage!",
+                self.name, target.name, damage
             );
             target.take_damage(damage);
         } else {
