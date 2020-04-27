@@ -1,10 +1,13 @@
 use crate::PLAYER;
 use crate::environment::{ Game, Map };
 
-
 pub mod npc;
 use npc::*;
 use npc::ai::*;
+
+use std::cmp::max;
+use rand::Rng;
+//use math::round::ceil;
 
 use tcod::colors::*;
 use tcod::console::*;
@@ -89,15 +92,19 @@ impl Object {
     // Function to allow fighter-enabled objects to attack other fighter-enabled objects.
     pub fn attack(&mut self, target: &mut Object) {
         // Damage formula.
-        let damage = (self.fighter.map_or(0, |f| f.power) /
-            target.fighter.map_or(0, |f| f.defense)) *
-            ((self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) / 2.0) /
-             (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) * 0.25)).round() as i32;
+        let mut rng = rand::thread_rng();
+        let attack = (self.fighter.map_or(0, |f| f.power)) as f32 + rng.gen_range(-1.0, 1.0);
+        let defense = (target.fighter.map_or(0, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
+        let level_mod =
+            (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) / 2.0) /
+            (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) * 0.25);
+        let damage = (attack / defense * level_mod).round() as i32;
+        println!("Attack: {}, Defense: {}, Level-Mod: {}", attack, defense, level_mod);
         if damage > 0 {
             // Target takes damage.
             println!(
-                "{} attacks {} for {} damage!",
-                self.name, target.name, damage
+                "{} attacks {} for {} damage!\n{} now has {} HP!",
+                self.name, target.name, damage, target.name, target.fighter.unwrap().hp
             );
             target.take_damage(damage);
         } else {
@@ -136,11 +143,23 @@ impl Object {
         // Attack target if found, otherwise move
         match target_id {
             Some(target_id) => {
-                println!("The {} resists your futile attacks!", objects[target_id].name);
+                let (player, target) = Object::mut_two(PLAYER, target_id, objects);
+                player.attack(target);
             },
             None => {
                 Object::move_by(PLAYER, dx, dy, &game.map, objects);
             }
+        }
+    }
+
+    pub fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut T, &mut T) {
+        assert!(first_index != second_index);
+        let split_at_index = max(first_index, second_index);
+        let (first_slice, second_slice) = items.split_at_mut(split_at_index);
+        if first_index < second_index {
+            (&mut first_slice[first_index], &mut second_slice[0])
+        } else {
+            (&mut second_slice[0], &mut first_slice[second_index])
         }
     }
 }

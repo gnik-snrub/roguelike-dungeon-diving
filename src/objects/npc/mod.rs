@@ -21,8 +21,8 @@ impl Object {
             exp: 0,
             max_hp: 10,
             hp: 10,
-            defense: 1,
-            power: 4,
+            defense: 2,
+            power: 5,
         });
         fire_elemental.ai = Some(Ai::Basic);
         fire_elemental

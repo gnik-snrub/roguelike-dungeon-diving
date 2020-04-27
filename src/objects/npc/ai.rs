@@ -35,10 +35,10 @@ impl Object {
                 // Move towards player if far away.
                 let (player_x, player_y) = objects[PLAYER].pos();
                 Object::move_towards(monster_id, player_x, player_y, &game.map, objects);
-            } else if objects[PLAYER].fighter.map_or(false, |f| f.hp > 0) {
+            } else if objects[PLAYER].fighter.unwrap().hp >= 0 {
                 // Close enough - Attack! (If player is alive)
-                let monster = &objects[monster_id];
-                println!(" The attack of the {} bounces off your mighty armor!", monster.name);
+                let (monster, player) = Object::mut_two(monster_id, PLAYER, objects);
+                monster.attack(player);
             }
         }
     }

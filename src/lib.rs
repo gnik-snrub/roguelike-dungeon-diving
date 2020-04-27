@@ -83,6 +83,7 @@ pub fn game(mut tcod: &mut Tcod) {
                 }
             }
         }
+        println!("HP: {}", objects[PLAYER].fighter.unwrap().hp);
     }
 }
 
