@@ -7,9 +7,8 @@ use dungeon::*;
 
 use crate::objects::Object;
 
-use rand::Rng;
+use rand::*;
 
-use tcod::colors::*;
 use tcod::map::FovAlgorithm;
 
 // Determines Field-Of-View
@@ -26,12 +25,6 @@ const ROOM_MAX_SIZE: i32 = 12;
 const ROOM_MIN_SIZE: i32 = 4;
 const MAX_ROOMS: i32 = 18;
 const MAX_ROOM_MONSTERS: i32 = 3;
-
-// Tile colors
-pub const COLOR_DARK_WALL: Color = Color { r: 28, g: 28, b: 28, };
-pub const COLOR_LIGHT_WALL: Color = Color { r: 112, g: 112, b: 112 };
-pub const COLOR_DARK_GROUND: Color = Color { r: 84, g: 71, b: 35, };
-pub const COLOR_LIGHT_GROUND: Color = Color { r: 138, g: 122, b: 80 };
 
 pub type Map = Vec<Vec<Tile>>;
 

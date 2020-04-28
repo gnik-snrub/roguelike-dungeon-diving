@@ -26,11 +26,12 @@ impl Object {
             exp: 0,
             max_hp: 10,
             hp: 10,
-            defense: 0,
-            power: 6,
+            defense: 1,
+            power: 4,
             on_death: DeathCallback::Monster,
         });
         fire_elemental.ai = Some(Ai::Basic);
+        fire_elemental.corpse_type = " ashes".into();
         fire_elemental
     }
 
@@ -41,11 +42,12 @@ impl Object {
             exp: 0,
             max_hp: 16,
             hp: 16,
-            defense: 4,
-            power: 1,
+            defense: 3,
+            power: 2,
             on_death: DeathCallback::Monster,
         });
         crystal_lizard.ai = Some(Ai::Basic);
+        crystal_lizard.corpse_type = " shards".into();
         crystal_lizard
     }
 
@@ -73,6 +75,7 @@ impl Object {
         game.messages.add("You died, lmao!", RED);
         player.char = '%';
         player.color = DARK_RED;
+        player.name = format!("{}{}", player.name, player.corpse_type);
     }
 
     fn monster_death(monster: &mut Object, game: &mut Game) {
@@ -83,6 +86,6 @@ impl Object {
         monster.blocks = false;
         monster.fighter = None;
         monster.ai = None;
-        monster.name = format!("Remains of {}", monster.name);
+        monster.name = format!("{}{}", monster.name, monster.corpse_type);
     }
 }

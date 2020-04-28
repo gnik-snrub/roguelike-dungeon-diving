@@ -23,6 +23,7 @@ pub struct Object {
     pub blocks: bool,
     pub alive: bool,
     pub fighter: Option<Fighter>,
+    pub corpse_type: String,
     pub ai: Option<Ai>,
 }
 
@@ -40,6 +41,7 @@ impl Object {
             blocks: blocks,
             alive: false,
             fighter: None,
+            corpse_type: String::new(),
             ai: None,
         }
     }
@@ -158,6 +160,7 @@ impl Object {
             power: 5,
             on_death: DeathCallback::Player,
         });
+        player.corpse_type = "'s bloody corpse".into();
         player
     }
 

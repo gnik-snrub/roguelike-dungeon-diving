@@ -6,6 +6,8 @@ use objects::Object;
 use environment::*;
 use controls::{ handle_keys, PlayerAction };
 
+use rand::*;
+
 use tcod::console::*;
 use tcod::colors::*;
 use tcod::map::Map as FovMap;
@@ -23,6 +25,11 @@ const PANEL_Y: i32 = SCREEN_HEIGHT - PANEL_HEIGHT;
 const MSG_X: i32 = BAR_WIDTH + 2;
 const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
+
+const DARK_WALL_COLOR: usize = 0;
+const LIGHT_WALL_COLOR: usize = 1;
+const DARK_GROUND_COLOR: usize = 2;
+const LIGHT_GROUND_COLOR: usize = 3;
 
 pub struct Tcod {
     pub root: Root,
@@ -53,6 +60,7 @@ impl Tcod {
 }
 
 pub fn game(mut tcod: &mut Tcod) {
+
     // Creates object representing player
     let player = Object::player();
     let mut objects = vec![player];
@@ -80,17 +88,20 @@ pub fn game(mut tcod: &mut Tcod) {
     // Force FOV "recompute" first time through the game loop
     let mut previous_player_position = (-1, -1);
 
+    let colors = gen_colors();
+
     while !tcod.root.window_closed() {
         tcod.con.clear();
 
-        // Renders the screen
-        let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
             Some((_, Event::Mouse(m))) => tcod.mouse = m,
             Some((_, Event::Key(k))) => tcod.key = k,
             _ => tcod.key = Default::default(),
         }
-        render_all(&mut tcod, &mut game, &objects, fov_recompute);
+
+        // Renders the screen
+        let fov_recompute = previous_player_position != (objects[PLAYER].pos());
+        render_all(&mut tcod, &mut game, &objects, fov_recompute, &colors);
 
         // FOV-Disabled render for debug purposes
         //debug_render_all(&mut tcod, &game, &objects);
@@ -113,7 +124,33 @@ pub fn game(mut tcod: &mut Tcod) {
     }
 }
 
-fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recompute: bool) {
+fn gen_colors() -> [Color; 4] {
+    let light_wall_color: Color = Color {
+        r: ((rand::thread_rng().gen_range(50, 100))), // Range = 50/100
+        g: ((rand::thread_rng().gen_range(50, 100))),
+        b: ((rand::thread_rng().gen_range(50, 100)))
+    };
+    let light_ground_color: Color = Color {
+        r: ((rand::thread_rng().gen_range(50, 150))), // Range = 100/200
+        g: ((rand::thread_rng().gen_range(75, 175))),
+        b: ((rand::thread_rng().gen_range(25, 175)))
+    };
+    let dark_ground_color: Color = light_ground_color - Color {
+        r: ((rand::thread_rng().gen_range(75, 100))), // Range = 0/125
+        g: ((rand::thread_rng().gen_range(75, 100))),
+        b: ((rand::thread_rng().gen_range(75, 100)))
+    };
+    let dark_wall_color: Color = light_wall_color - Color {
+        r: ((rand::thread_rng().gen_range(35, 50))), // Range = 0/50
+        g: ((rand::thread_rng().gen_range(35, 50))),
+        b: ((rand::thread_rng().gen_range(35, 50)))
+    };
+
+    let colors = [dark_wall_color, light_wall_color, dark_ground_color, light_ground_color];
+    colors
+}
+
+fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recompute: bool, colors: &[Color; 4]) {
     if fov_recompute {
         //Recomputes FOV is needed, such as player movement
         let player = &objects[PLAYER];
@@ -121,20 +158,20 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
             .compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
-    // Go through tiles and set BG color
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
+
             let visible = tcod.fov.is_in_fov(x, y);
             let wall = game.map[x as usize][y as usize].block_sight;
             let color = match(visible, wall) {
 
                 // Outside of field of view:
-                (false, true) => COLOR_DARK_WALL,
-                (false, false) => COLOR_DARK_GROUND,
+                (false, true) => colors[DARK_WALL_COLOR],
+                (false, false) => colors[DARK_GROUND_COLOR],
 
                 // Inside the field of view:
-                (true, true) => COLOR_LIGHT_WALL,
-                (true, false) => COLOR_LIGHT_GROUND,
+                (true, true) => colors[LIGHT_WALL_COLOR],
+                (true, false) => colors[LIGHT_GROUND_COLOR],
             };
 
             let explored = &mut game.map[x as usize][y as usize].explored;
@@ -157,6 +194,7 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
         .filter(|o| tcod.fov.is_in_fov(o.x, o.y))
         .collect();
     to_draw.sort_by(|o1, o2| o1.blocks.cmp(&o2.blocks));
+
     // Draw all objects in the list
     for object in &to_draw {
         if tcod.fov.is_in_fov(object.x, object.y) {
@@ -197,7 +235,7 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
     render_bar(
         &mut tcod.panel,
         1,
-        1,
+        0,
         BAR_WIDTH,
         "HP",
         hp,
@@ -209,7 +247,7 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
     tcod.panel.set_default_foreground(LIGHT_GREY);
     tcod.panel.print_ex(
         1,
-        0,
+        1,
         BackgroundFlag::None,
         TextAlignment::Left,
         get_names_under_mouse(tcod.mouse, objects, &tcod.fov),
@@ -293,38 +331,5 @@ fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> 
         .map(|obj| obj.name.clone())
         .collect::<Vec<_>>();
 
-    names.join(", ") // Separates names with commas.
-}
-
-// DEBUG FUNCTIONS BELOW HERE
-pub fn debug_render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
-    // go through all tiles, and set their background color
-    for y in 0..MAP_HEIGHT {
-        for x in 0..MAP_WIDTH {
-            let wall = game.map[x as usize][y as usize].block_sight;
-            if wall {
-                tcod.con
-                    .set_char_background(x, y, COLOR_DARK_WALL, BackgroundFlag::Set);
-            } else {
-                tcod.con
-                    .set_char_background(x, y, COLOR_DARK_GROUND, BackgroundFlag::Set);
-            }
-        }
-    }
-
-    // draw all objects in the list
-    for object in objects {
-        object.draw(&mut tcod.con);
-    }
-
-    // blit the contents of "con" to the root console
-    blit(
-        &tcod.con,
-        (0, 0),
-        (MAP_WIDTH, MAP_HEIGHT),
-        &mut tcod.root,
-        (0, 0),
-        1.0,
-        1.0,
-    );
+    names.join("\n") // Separates names new lines.
 }

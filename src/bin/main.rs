@@ -1,7 +1,7 @@
 extern crate roguelike;
 use roguelike::*;
 
-const LIMIT_FPS: i32 = 20; // 20 frames-per-second maximum
+const LIMIT_FPS: i32 = 60; // 20 frames-per-second maximum
 
 fn main() {
 
