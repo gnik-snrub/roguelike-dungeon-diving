@@ -1,9 +1,8 @@
 use crate::environment::Game;
+use super::Object;
 
 pub mod ai;
 use ai::*;
-
-use super::Object;
 
 use tcod::colors::*;
 
@@ -20,12 +19,12 @@ pub struct Fighter {
 
 impl Object {
     pub fn fire_elemental(x: i32, y: i32) -> Object {
-        let mut fire_elemental = Object::new(x, y, 'f', tcod::colors::ORANGE, "Fire Elemental", true);
+        let mut fire_elemental = Object::new(x, y, 'f', tcod::colors::DARK_ORANGE, "Fire Elemental", true);
         fire_elemental.fighter = Some(Fighter {
             level: 1,
             exp: 0,
-            max_hp: 10,
-            hp: 10,
+            max_hp: 12,
+            hp: 12,
             defense: 1,
             power: 4,
             on_death: DeathCallback::Monster,
@@ -36,12 +35,12 @@ impl Object {
     }
 
     pub fn crystal_lizard(x: i32, y: i32) -> Object {
-        let mut crystal_lizard = Object::new(x, y, 'C', tcod::colors::LIGHTER_SKY, "Crystal Lizard", true);
+        let mut crystal_lizard = Object::new(x, y, 'C', tcod::colors::SKY, "Crystal Lizard", true);
         crystal_lizard.fighter = Some(Fighter {
             level: 1,
             exp: 0,
-            max_hp: 16,
-            hp: 16,
+            max_hp: 8,
+            hp: 8,
             defense: 3,
             power: 2,
             on_death: DeathCallback::Monster,
@@ -81,7 +80,7 @@ impl Object {
     fn monster_death(monster: &mut Object, game: &mut Game) {
         // Turns monster into a corpse.
         // No longer blocks, attacks, or moves.
-        game.messages.add(format!("{} is dead!", monster.name), ORANGE);
+        game.messages.add(format!("{} is dead!", monster.name), DARK_RED);
         monster.color = DARK_RED;
         monster.blocks = false;
         monster.fighter = None;

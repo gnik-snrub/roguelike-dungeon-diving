@@ -1,7 +1,8 @@
 pub mod tiles;
 pub mod dungeon;
 
-use crate::{ PLAYER, Messages };
+use crate::PLAYER;
+use crate::graphics::Messages;
 use tiles::Tile;
 use dungeon::*;
 
