@@ -114,7 +114,7 @@ impl Object {
                     "{} attacks {} dealing {} damage.",
                     self.name, target.name, damage
                 ),
-                WHITE,
+                self.color,
             );
             println!(
                 "{}'s attack: {}\nDefense: {}\nLevel_mod: {}\nDamage: {}",

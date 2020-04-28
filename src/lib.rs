@@ -9,6 +9,7 @@ use controls::{ handle_keys, PlayerAction };
 use tcod::console::*;
 use tcod::colors::*;
 use tcod::map::Map as FovMap;
+use tcod::input::{ self, Event, Key, Mouse };
 
 const SCREEN_WIDTH: i32 = 80;
 const SCREEN_HEIGHT: i32 = 50;
@@ -28,6 +29,8 @@ pub struct Tcod {
     pub con: Offscreen,
     pub panel: Offscreen,
     pub fov: FovMap,
+    pub key: Key,
+    pub mouse: Mouse,
 }
 
 impl Tcod {
@@ -42,8 +45,10 @@ impl Tcod {
         let con = Offscreen::new(MAP_WIDTH, MAP_HEIGHT);
         let panel = Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT);
         let fov = FovMap::new(MAP_WIDTH, MAP_HEIGHT);
+        let key = Default::default();
+        let mouse = Default::default();
 
-        Tcod { root, con, panel, fov }
+        Tcod { root, con, panel, fov, key, mouse }
     }
 }
 
@@ -68,8 +73,8 @@ pub fn game(mut tcod: &mut Tcod) {
 
     // Intro message
     game.messages.add(
-        "Welcome Stranger! Prepare to perish in the Tombs of the Ancient Kinds.",
-        RED,
+        "Dive deep. Gain power. Try not to die in these ancient tombs...",
+        GOLD,
     );
 
     // Force FOV "recompute" first time through the game loop
@@ -80,6 +85,11 @@ pub fn game(mut tcod: &mut Tcod) {
 
         // Renders the screen
         let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
+        match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
+            Some((_, Event::Mouse(m))) => tcod.mouse = m,
+            Some((_, Event::Key(k))) => tcod.key = k,
+            _ => tcod.key = Default::default(),
+        }
         render_all(&mut tcod, &mut game, &objects, fov_recompute);
 
         // FOV-Disabled render for debug purposes
@@ -196,6 +206,15 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
         DARKER_RED,
     );
 
+    tcod.panel.set_default_foreground(LIGHT_GREY);
+    tcod.panel.print_ex(
+        1,
+        0,
+        BackgroundFlag::None,
+        TextAlignment::Left,
+        get_names_under_mouse(tcod.mouse, objects, &tcod.fov),
+    );
+
     // Blit the contents of 'panel' to the root console.
     blit(
         &tcod.panel,
@@ -262,6 +281,19 @@ impl Messages {
     pub fn iter(&self) -> impl DoubleEndedIterator<Item = &(String, Color)> {
         self.messages.iter()
     }
+}
+
+fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
+    let (x, y) = (mouse.cx as i32, mouse.cy as i32);
+
+    // Creates a list with the names of all objects at mouse's coordinates in FOV.
+    let names = objects
+        .iter()
+        .filter(|obj| obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y))
+        .map(|obj| obj.name.clone())
+        .collect::<Vec<_>>();
+
+    names.join(", ") // Separates names with commas.
 }
 
 // DEBUG FUNCTIONS BELOW HERE

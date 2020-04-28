@@ -12,15 +12,12 @@ pub enum PlayerAction {
 }
 
 pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, objects: &mut [Object]) -> PlayerAction {
-    use tcod::input::Key;
     use tcod::input::KeyCode::*;
 
     use PlayerAction::*;
-    // todo: handle handle keys
 
-    let key = tcod.root.wait_for_keypress(true);
     let player_alive = objects[PLAYER].alive;
-    match (key, key.text(), player_alive) {
+    match (tcod.key, tcod.key.text(), player_alive) {
         // Movement keys
         ( Key { code: NumPad7, .. }, _, true) => {
             Object::player_move_or_attack(-1, -1, game, objects);
