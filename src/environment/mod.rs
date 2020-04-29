@@ -3,10 +3,11 @@ pub mod dungeon;
 
 use crate::PLAYER;
 use crate::graphics::Messages;
+use crate::objects::Object;
+use crate::graphics::gen_colors;
 use tiles::Tile;
 use dungeon::*;
 
-use crate::objects::Object;
 
 use rand::*;
 
@@ -45,8 +46,11 @@ impl Game {
 }
 
 pub fn make_map(objects: &mut Vec<Object>) -> Map {
+    // Generate dungeon floor colors alongside variation
+    let colors = gen_colors();
+
     // Fill map with wall tiles
-    let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
+    let mut map = vec![vec![Tile::wall(&colors); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
     //Creates vector to store rooms
     let mut rooms: Vec<Rect> = vec![];
@@ -73,7 +77,7 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
         // Adds in rooms according to world path value
         if (world_path < 0.5 && (!failed || failed)) || (world_path > 0.5 && !failed) {
             // Paints room onto map tiles
-            create_room(new_room, &mut map);
+            create_room(new_room, &mut map, &colors);
             place_objects(new_room, &map, objects);
 
             // Center coordinates of the new room, will be used later
@@ -93,12 +97,12 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
                 // Arbitrarily decides to begin with either a vertical, or horizontal tunnel
                 if rand::random() {
                     // Horizontal tunnel first
-                    create_h_tunnel(prev_x, new_x, prev_y, &mut map);
-                    create_v_tunnel(prev_y, new_y, new_x, &mut map);
+                    create_h_tunnel(prev_x, new_x, prev_y, &mut map, &colors);
+                    create_v_tunnel(prev_y, new_y, new_x, &mut map, &colors);
                 } else {
                     // Vertical tunnel first
-                    create_v_tunnel(prev_y, new_y, prev_x, &mut map);
-                    create_h_tunnel(prev_x, new_x, new_y, &mut map);
+                    create_v_tunnel(prev_y, new_y, prev_x, &mut map, &colors);
+                    create_h_tunnel(prev_x, new_x, new_y, &mut map, &colors);
                 }
             }
         }
@@ -119,7 +123,7 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
         let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
 
         if !Object::is_blocked(x, y, map, objects) {
-            let mut monster = if rand::random::<f32>() < 0.8 { // 80% chance to get an orc
+            let mut monster = if rand::random::<f32>() < 0.8 {
                 Object::fire_elemental(x, y)
             } else {
                 Object::crystal_lizard(x, y)

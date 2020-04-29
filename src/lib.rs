@@ -6,7 +6,7 @@ pub mod graphics;
 use objects::Object;
 use environment::*;
 use controls::{ handle_keys, PlayerAction };
-use graphics::{ render_all, gen_colors };
+use graphics::render_all;
 
 use tcod::console::*;
 use tcod::colors::*;
@@ -26,10 +26,11 @@ const MSG_X: i32 = BAR_WIDTH + 2;
 const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
 
-const DARK_WALL_COLOR: usize = 0;
-const LIGHT_WALL_COLOR: usize = 1;
-const DARK_GROUND_COLOR: usize = 2;
+const LIGHT_WALL_COLOR: usize = 0;
 const LIGHT_GROUND_COLOR: usize = 3;
+const V_ONE: usize = 1;
+const V_TWO: usize = 2;
+const DARKNESS_MODIFIER: usize = 6;
 
 pub struct Tcod {
     pub root: Root,
@@ -88,8 +89,6 @@ pub fn game(mut tcod: &mut Tcod) {
     // Force FOV "recompute" first time through the game loop
     let mut previous_player_position = (-1, -1);
 
-    let colors = gen_colors();
-
     while !tcod.root.window_closed() {
         tcod.con.clear();
 
@@ -101,7 +100,7 @@ pub fn game(mut tcod: &mut Tcod) {
 
         // Renders the screen
         let fov_recompute = previous_player_position != (objects[PLAYER].pos());
-        render_all(&mut tcod, &mut game, &objects, fov_recompute, &colors);
+        render_all(&mut tcod, &mut game, &objects, fov_recompute);
 
         // FOV-Disabled render for debug purposes
         //debug_render_all(&mut tcod, &game, &objects);

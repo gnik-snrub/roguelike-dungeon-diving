@@ -19,7 +19,7 @@ pub struct Fighter {
 
 impl Object {
     pub fn fire_elemental(x: i32, y: i32) -> Object {
-        let mut fire_elemental = Object::new(x, y, 'f', tcod::colors::DARK_ORANGE, "Fire Elemental", true);
+        let mut fire_elemental = Object::new(x, y, 'f', tcod::colors::DARK_AMBER, "Fire Elemental", true);
         fire_elemental.fighter = Some(Fighter {
             level: 1,
             exp: 0,
@@ -35,7 +35,7 @@ impl Object {
     }
 
     pub fn crystal_lizard(x: i32, y: i32) -> Object {
-        let mut crystal_lizard = Object::new(x, y, 'C', tcod::colors::SKY, "Crystal Lizard", true);
+        let mut crystal_lizard = Object::new(x, y, 'C', tcod::colors::DARK_SKY, "Crystal Lizard", true);
         crystal_lizard.fighter = Some(Fighter {
             level: 1,
             exp: 0,

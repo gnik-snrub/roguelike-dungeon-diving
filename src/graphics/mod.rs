@@ -4,7 +4,12 @@ use crate::environment::*;
 
 use rand::*;
 
-pub fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recompute: bool, colors: &[Color; 4]) {
+pub fn render_all(
+    tcod: &mut Tcod,
+    game: &mut Game,
+    objects: &[Object],
+    fov_recompute: bool,
+) {
     if fov_recompute {
         //Recomputes FOV is needed, such as player movement
         let player = &objects[PLAYER];
@@ -20,12 +25,12 @@ pub fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_reco
             let color = match(visible, wall) {
 
                 // Outside of field of view:
-                (false, true) => colors[DARK_WALL_COLOR],
-                (false, false) => colors[DARK_GROUND_COLOR],
+                (false, true) => game.map[x as usize][y as usize].color_dark,
+                (false, false) => game.map[x as usize][y as usize].color_dark,
 
                 // Inside the field of view:
-                (true, true) => colors[LIGHT_WALL_COLOR],
-                (true, false) => colors[LIGHT_GROUND_COLOR],
+                (true, true) => game.map[x as usize][y as usize].color_light,
+                (true, false) => game.map[x as usize][y as usize].color_light,
             };
 
             let explored = &mut game.map[x as usize][y as usize].explored;
@@ -119,29 +124,42 @@ pub fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_reco
     );
 }
 
-pub fn gen_colors() -> [Color; 4] {
+pub fn gen_colors() -> [Color; 7] {
     let light_wall_color: Color = Color {
-        r: ((rand::thread_rng().gen_range(50, 100))), // Range = 50/100
+        r: ((rand::thread_rng().gen_range(50, 100))),
         g: ((rand::thread_rng().gen_range(50, 100))),
         b: ((rand::thread_rng().gen_range(50, 100)))
     };
     let light_ground_color: Color = Color {
-        r: ((rand::thread_rng().gen_range(50, 150))), // Range = 100/200
+        r: ((rand::thread_rng().gen_range(50, 150))),
         g: ((rand::thread_rng().gen_range(75, 175))),
-        b: ((rand::thread_rng().gen_range(25, 175)))
+        b: ((rand::thread_rng().gen_range(50, 200)))
     };
-    let dark_ground_color: Color = light_ground_color - Color {
-        r: ((rand::thread_rng().gen_range(55, 100))), // Range = 0/125
-        g: ((rand::thread_rng().gen_range(75, 100))),
-        b: ((rand::thread_rng().gen_range(35, 100)))
+    let variant: Color = Color  {
+        r: ((rand::thread_rng().gen_range(5, 20))),
+        g: ((rand::thread_rng().gen_range(5, 20))),
+        b: ((rand::thread_rng().gen_range(5, 20)))
     };
-    let dark_wall_color: Color = light_wall_color - Color {
-        r: ((rand::thread_rng().gen_range(45, 50))), // Range = 0/50
-        g: ((rand::thread_rng().gen_range(45, 50))),
-        b: ((rand::thread_rng().gen_range(15, 50)))
+    let light_wall_variant_one: Color = light_wall_color - variant;
+    let light_wall_variant_two: Color = light_wall_color + variant;
+    let light_ground_variant_one: Color = light_ground_color - variant;
+    let light_ground_variant_two: Color = light_ground_color + variant;
+
+    let dark_modifier: Color = Color {
+        r: ((rand::thread_rng().gen_range(20, 50))),
+        g: ((rand::thread_rng().gen_range(25, 55))),
+        b: ((rand::thread_rng().gen_range(5, 35))),
     };
 
-    let colors = [dark_wall_color, light_wall_color, dark_ground_color, light_ground_color];
+    let colors = [
+        light_wall_color,
+        light_wall_variant_one,
+        light_wall_variant_two,
+        light_ground_color,
+        light_ground_variant_one,
+        light_ground_variant_two,
+        dark_modifier,
+        ];
     colors
 }
 
