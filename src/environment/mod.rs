@@ -8,7 +8,6 @@ use crate::graphics::gen_colors;
 use tiles::Tile;
 use dungeon::*;
 
-
 use rand::*;
 
 use tcod::map::FovAlgorithm;

@@ -7,7 +7,6 @@ use npc::ai::*;
 
 use std::cmp::max;
 use rand::Rng;
-//use math::round::ceil;
 
 use tcod::colors::*;
 use tcod::console::*;
@@ -22,29 +21,16 @@ pub struct Object {
     pub name: String,
     pub blocks: bool,
     pub alive: bool,
-    pub fighter: Option<Fighter>,
     pub corpse_type: String,
+    pub fighter: Option<Fighter>,
     pub ai: Option<Ai>,
+    pub inventory: Option<Vec<Object>>,
 }
 
 impl Object {
     // -------------------------------------
     // -----OBJECT MANAGEMENT FUNCTIONS-----
     // -------------------------------------
-    pub fn new(x: i32, y: i32, char: char, color: Color, name: &str, blocks: bool) -> Object {
-        Object {
-            x: x,
-            y: y,
-            char: char,
-            color: color,
-            name: name.into(),
-            blocks: blocks,
-            alive: false,
-            fighter: None,
-            corpse_type: String::new(),
-            ai: None,
-        }
-    }
 
     // Places object on the screen
     pub fn draw(&self, con: &mut dyn Console) {
@@ -118,10 +104,6 @@ impl Object {
                 ),
                 self.color,
             );
-            println!(
-                "{}'s attack: {}\nDefense: {}\nLevel_mod: {}\nDamage: {}",
-                self.name, attack, defense, level_mod, damage
-            );
             target.take_damage(damage, game);
         } else {
             game.messages.add(
@@ -149,19 +131,27 @@ impl Object {
     // -----PLAYER RELATED FUNCTIONS-----
     // ----------------------------------
     pub fn player() -> Object {
-        let mut player = Object::new(0, 0, '@', tcod::colors::WHITE, "Player", true);
-        player.alive = true;
-        player.fighter = Some(Fighter {
-            level: 1,
-            exp: 0,
-            max_hp: 30,
-            hp: 30,
-            defense: 2,
-            power: 5,
-            on_death: DeathCallback::Player,
-        });
-        player.corpse_type = "'s bloody corpse".into();
-        player
+        Object {
+            x: 0,
+            y: 0,
+            char: '@',
+            color: WHITE,
+            name: "Player".into(),
+            blocks: true,
+            alive: true,
+            corpse_type: "'s bloody corpse".into(),
+            fighter: Some(Fighter {
+                level: 1,
+                exp: 0,
+                max_hp: 30,
+                hp: 30,
+                defense: 2,
+                power: 5,
+                on_death: DeathCallback::Player,
+            }),
+            ai: None,
+            inventory: Some(vec![]),
+        }
     }
 
     pub fn player_move_or_attack(dx: i32, dy: i32, game: &mut Game, objects: &mut [Object]) {
