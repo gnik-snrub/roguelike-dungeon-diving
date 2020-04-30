@@ -8,6 +8,7 @@ use crate::graphics::gen_colors;
 use tiles::Tile;
 use dungeon::*;
 
+use std::collections::HashMap;
 use rand::*;
 
 use tcod::map::FovAlgorithm;
@@ -26,6 +27,7 @@ const ROOM_MAX_SIZE: i32 = 12;
 const ROOM_MIN_SIZE: i32 = 4;
 const MAX_ROOMS: i32 = 18;
 const MAX_ROOM_MONSTERS: i32 = 3;
+const MAX_ROOM_ITEMS: i32 = 2;
 
 pub type Map = Vec<Vec<Tile>>;
 
@@ -35,8 +37,8 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(mut objects: &mut Vec<Object>) -> Game {
-        let map = make_map(&mut objects);
+    pub fn new(mut characters: &mut Vec<Object>, mut items: &mut HashMap<i32, Object>) -> Game {
+        let map = make_map(&mut characters, &mut items);
         Game {
             map: map,
             messages: Messages::new(),
@@ -44,7 +46,7 @@ impl Game {
     }
 }
 
-pub fn make_map(objects: &mut Vec<Object>) -> Map {
+pub fn make_map(characters: &mut Vec<Object>, items: &mut HashMap<i32, Object>) -> Map {
     // Generate dungeon floor colors alongside variation
     let colors = gen_colors();
 
@@ -60,6 +62,8 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
     let world_path = rand::random::<f32>();
     println!("World gen = {}", world_path);
 
+    let mut item_counter = 1;
+
     for _ in 0..MAX_ROOMS {
         // Random width and height
         let w = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
@@ -70,14 +74,15 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
 
         let new_room = Rect::new(x, y, w, h);
 
-        // Run through the other rooms and see if they interact with this one
+        // Run through the other rooms and see if they interact with this one`
         let failed = rooms.iter().any(|other_room| new_room.intersects_with(other_room));
 
         // Adds in rooms according to world path value
         if (world_path < 0.5 && (!failed || failed)) || (world_path > 0.5 && !failed) {
             // Paints room onto map tiles
             create_room(new_room, &mut map, &colors);
-            place_objects(new_room, &map, objects);
+            place_characters(new_room, &map, characters);
+            place_items(new_room, items, &mut item_counter);
 
             // Center coordinates of the new room, will be used later
             let (new_x, new_y) = new_room.center();
@@ -85,7 +90,7 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
             if rooms.is_empty() {
 
                 // This is the first room, where the player starts at
-                objects[PLAYER].set_pos(new_x, new_y);
+                characters[PLAYER].set_pos(new_x, new_y);
 
             } else {
 
@@ -112,7 +117,7 @@ pub fn make_map(objects: &mut Vec<Object>) -> Map {
     map
 }
 
-fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
+fn place_characters(room: Rect, map: &Map, characters: &mut Vec<Object>) {
     // Choose random number of monsters
     let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
 
@@ -121,16 +126,33 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
         let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
         let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
 
-        if !Object::is_blocked(x, y, map, objects) {
+        if !Object::is_blocked(x, y, map, characters) {
             let mut monster = if rand::random::<f32>() < 0.8 {
                 Object::fire_elemental(x, y)
             } else {
                 Object::crystal_lizard(x, y)
             };
             monster.alive = true;
-            objects.push(monster);
+            characters.push(monster);
         }
     }
+}
+
+fn place_items(room: Rect, items: &mut HashMap<i32, Object>, item_counter: &mut i32) {
+    let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+
+    for _ in 0..num_items {
+        // Select random spot for the item.
+        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
+        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
+
+        // Create a health potion.
+        let item = Object::health_pot(x, y);
+        items.insert(*item_counter, item);
+        *item_counter += 1;
+        println!("{:?}", items.len());
+    }
+    println!("{:?}", items);
 }
 
 // --- TO-DO ---

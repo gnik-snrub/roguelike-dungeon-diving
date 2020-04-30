@@ -4,8 +4,11 @@ use crate::environment::{ Game, Map };
 pub mod npc;
 use npc::*;
 use npc::ai::*;
+pub mod items;
+use items::Item;
 
 use std::cmp::max;
+use std::collections::HashMap;
 use rand::Rng;
 
 use tcod::colors::*;
@@ -25,6 +28,7 @@ pub struct Object {
     pub fighter: Option<Fighter>,
     pub ai: Option<Ai>,
     pub inventory: Option<Vec<Object>>,
+    pub item: Option<Item>,
 }
 
 impl Object {
@@ -130,6 +134,8 @@ impl Object {
     // ----------------------------------
     // -----PLAYER RELATED FUNCTIONS-----
     // ----------------------------------
+
+    // Creates player object.
     pub fn player() -> Object {
         Object {
             x: 0,
@@ -141,8 +147,9 @@ impl Object {
             alive: true,
             corpse_type: "'s bloody corpse".into(),
             fighter: Some(Fighter {
-                level: 1,
+                level: 10,
                 exp: 0,
+                //level_up: 5,
                 max_hp: 30,
                 hp: 30,
                 defense: 2,
@@ -150,10 +157,12 @@ impl Object {
                 on_death: DeathCallback::Player,
             }),
             ai: None,
-            inventory: Some(vec![]),
+            inventory: Some(Vec::new()),
+            item: None,
         }
     }
 
+    // Decides if the player object should move, or attack when inputs are entered.
     pub fn player_move_or_attack(dx: i32, dy: i32, game: &mut Game, objects: &mut [Object]) {
         // The coordinates the player is moving to / attacking
         let x = objects[PLAYER].x + dx;
@@ -171,6 +180,34 @@ impl Object {
             None => {
                 Object::move_by(PLAYER, dx, dy, &game.map, objects);
             }
+        }
+    }
+
+    // Adds item to player's inventory, and removes from the map.
+    pub fn pick_item_up(object_id: i32, game: &mut Game, characters: &mut Vec<Object>, items: &mut HashMap<i32, Object>) {
+        println!("Object ID: {:?}", object_id);
+        println!("Total Items: {:?}", items.len());
+
+        match &mut characters[PLAYER].inventory {
+            Some(inventory) => if inventory.len() > 26 {
+                game.messages.add(
+                    format!("Your inventory is full!"),
+                    RED,
+                );
+            } else {
+                let wrapped = items.remove(&object_id);
+                match wrapped {
+                    Some(pick_up_item) => {
+                        game.messages.add(
+                            format!("You picked found a {}", pick_up_item.name),
+                            GREEN,
+                        );
+                        inventory.push(pick_up_item);
+                    },
+                    _ => (),
+                }
+            }
+            None => println!("You don't have access to your inventory"),
         }
     }
 }

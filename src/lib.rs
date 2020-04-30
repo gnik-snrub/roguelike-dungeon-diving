@@ -8,6 +8,8 @@ use environment::*;
 use controls::{ handle_keys, PlayerAction };
 use graphics::render_all;
 
+use std::collections::HashMap;
+
 use tcod::console::*;
 use tcod::colors::*;
 use tcod::map::Map as FovMap;
@@ -64,10 +66,11 @@ pub fn game(mut tcod: &mut Tcod) {
 
     // Creates object representing player
     let player = Object::player();
-    let mut objects = vec![player];
+    let mut characters = vec![player];
+    let mut items = HashMap::new();
 
     // Generate map to be rendered
-    let mut game = Game::new(&mut objects);
+    let mut game = Game::new(&mut characters, &mut items);
 
     // Populates the FOV map, based on the generated map
     for y in 0..MAP_HEIGHT {
@@ -99,24 +102,21 @@ pub fn game(mut tcod: &mut Tcod) {
         }
 
         // Renders the screen
-        let fov_recompute = previous_player_position != (objects[PLAYER].pos());
-        render_all(&mut tcod, &mut game, &objects, fov_recompute);
-
-        // FOV-Disabled render for debug purposes
-        //debug_render_all(&mut tcod, &game, &objects);
+        let fov_recompute = previous_player_position != (characters[PLAYER].pos());
+        render_all(&mut tcod, &mut game, &characters, &items, fov_recompute);
 
         tcod.root.flush();
 
         // Handles keys, and exits game if prompted
-        previous_player_position = objects[PLAYER].pos();
-        let player_action = handle_keys(&mut tcod, &mut game, &mut objects);
+        previous_player_position = characters[PLAYER].pos();
+        let player_action = handle_keys(&mut tcod, &mut game, &mut characters, &mut items);
         if player_action == PlayerAction::Exit { break; }
 
         // Lets monsters take their turn
-        if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
-            for id in 0..objects.len() {
-                if objects[id].ai.is_some() {
-                    Object::ai_take_turn(id, &tcod, &mut game, &mut objects);
+        if characters[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
+            for id in 0..characters.len() {
+                if characters[id].ai.is_some() {
+                    Object::ai_take_turn(id, &tcod, &mut game, &mut characters);
                 }
             }
         }

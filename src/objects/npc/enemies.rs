@@ -15,6 +15,7 @@ impl Object {
             fighter: None,
             ai: Some(Ai::Basic),
             inventory: None,
+            item: None,
         }
     }
 

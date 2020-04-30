@@ -7,12 +7,13 @@ use rand::*;
 pub fn render_all(
     tcod: &mut Tcod,
     game: &mut Game,
-    objects: &[Object],
+    characters: &[Object],
+    items: &HashMap<i32, Object>,
     fov_recompute: bool,
 ) {
     if fov_recompute {
         //Recomputes FOV is needed, such as player movement
-        let player = &objects[PLAYER];
+        let player = &characters[PLAYER];
         tcod.fov
             .compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
     }
@@ -46,15 +47,23 @@ pub fn render_all(
         }
     }
 
+    // Draw all items in the list.
+    // This takes place before the characters to place items on the lower Z-level.
+    for (_, item) in items.iter() {
+        if tcod.fov.is_in_fov(item.x, item.y) {
+            item.draw(&mut tcod.con);
+        }
+    }
+
     // Sorts items to place non-blocking items first.
     // This allows blocking items to appear on top of them.
-    let mut to_draw: Vec<_> = objects
+    let mut to_draw: Vec<_> = characters
         .iter()
         .filter(|o| tcod.fov.is_in_fov(o.x, o.y))
         .collect();
     to_draw.sort_by(|o1, o2| o1.blocks.cmp(&o2.blocks));
 
-    // Draw all objects in the list
+    // Draw all characters in the list
     for object in &to_draw {
         if tcod.fov.is_in_fov(object.x, object.y) {
             object.draw(&mut tcod.con);
@@ -89,8 +98,8 @@ pub fn render_all(
     }
 
     // Show the player's stats.
-    let hp = objects[PLAYER].fighter.unwrap().hp;
-    let max_hp = objects[PLAYER].fighter.unwrap().max_hp;
+    let hp = characters[PLAYER].fighter.unwrap().hp;
+    let max_hp = characters[PLAYER].fighter.unwrap().max_hp;
     render_bar(
         &mut tcod.panel,
         1,
@@ -109,7 +118,7 @@ pub fn render_all(
         1,
         BackgroundFlag::None,
         TextAlignment::Left,
-        get_names_under_mouse(tcod.mouse, objects, &tcod.fov),
+        get_names_under_mouse(tcod.mouse, characters, items, &tcod.fov),
     );
 
     // Blit the contents of 'panel' to the root console.
@@ -219,15 +228,29 @@ impl Messages {
     }
 }
 
-fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
+fn get_names_under_mouse(mouse: Mouse, characters: &[Object], items: &HashMap<i32, Object>, fov_map: &FovMap) -> String {
     let (x, y) = (mouse.cx as i32, mouse.cy as i32);
+    let mut names = Vec::new();
 
-    // Creates a list with the names of all objects at mouse's coordinates in FOV.
-    let names = objects
+    // Creates a list with the names of all characters at mouse's coordinates in FOV.
+    let character_names = characters
         .iter()
         .filter(|obj| obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y))
         .map(|obj| obj.name.clone())
         .collect::<Vec<_>>();
 
-    names.join("\n") // Separates names new lines.
+    // Adds items to vector first so they always appear at the top of the list.
+    for (_, item) in items {
+        if item.pos() == (x, y) && fov_map.is_in_fov(item.x, item.y) {
+            names.push(item.name.clone());
+        }
+    }
+
+    // Adds characters into the same vector as above.
+    for character in character_names.iter() {
+        names.push(character.clone());
+    }
+
+    // Concatenates the vector items into a string separated by new lines
+    names.join("\n")
 }
