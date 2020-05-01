@@ -16,7 +16,7 @@ pub fn render_all(
 ) {
     if fov_recompute {
         //Recomputes FOV is needed, such as player movement
-        let player = &characters[PLAYER];
+        let player = &game.player;
         tcod.fov
             .compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
     }
@@ -50,14 +50,16 @@ pub fn render_all(
         }
     }
 
-    draw_objects(tcod, items, characters);
+    draw_objects(tcod, game, items, characters);
     render_gui(tcod, game, characters, items);
 }
 
-fn draw_objects(tcod: &mut Tcod, items: &HashMap<i32, Object>, characters: &[Object]) {
+fn draw_objects(tcod: &mut Tcod, game: &Game, items: &HashMap<i32, Object>, characters: &[Object]) {
 
     draw_items(tcod, items);
     draw_chars(tcod, characters);
+    // Finally, it renders the player.
+    game.player.draw(&mut tcod.con);
 
     // Blit the contents (items + characters) of "con" to the root console and present it
     blit(

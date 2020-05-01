@@ -28,7 +28,7 @@ pub enum DeathCallback {
 impl DeathCallback {
     pub fn callback(self, object: &mut Object, game: &mut Game) {
         let callback: fn(&mut Object, &mut Game) = match self {
-            DeathCallback::Player => Object::player_death,
+            DeathCallback::Player => Object::fake_player_death,
             DeathCallback::Monster => Object::monster_death,
         };
         callback(object, game);
@@ -36,13 +36,7 @@ impl DeathCallback {
 }
 
 impl Object {
-    fn player_death(player: &mut Object, game: &mut Game) {
-        // The game ended!
-        game.messages.add("You died, lmao!", RED);
-        player.char = '%';
-        player.color = DARK_RED;
-        player.name = format!("{}{}", player.name, player.corpse_type);
-    }
+    fn fake_player_death(object: &mut Object, game: &mut Game) {}
 
     fn monster_death(monster: &mut Object, game: &mut Game) {
         // Turns monster into a corpse.

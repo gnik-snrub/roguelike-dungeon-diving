@@ -18,8 +18,6 @@ use tcod::input::{ self, Event, Key, Mouse };
 const SCREEN_WIDTH: i32 = 80;
 const SCREEN_HEIGHT: i32 = 50;
 
-const PLAYER: usize = 0;
-
 const BAR_WIDTH: i32 = 20;
 const PANEL_HEIGHT: i32 = 7;
 const PANEL_Y: i32 = SCREEN_HEIGHT - PANEL_HEIGHT;
@@ -64,9 +62,8 @@ impl Tcod {
 
 pub fn game(mut tcod: &mut Tcod) {
 
-    // Creates object representing player
-    let player = Object::player();
-    let mut characters = vec![player];
+    // Creates game objects
+    let mut characters = vec![];
     let mut items = HashMap::new();
 
     // Generate map to be rendered
@@ -102,18 +99,18 @@ pub fn game(mut tcod: &mut Tcod) {
         }
 
         // Renders the screen
-        let fov_recompute = previous_player_position != (characters[PLAYER].pos());
+        let fov_recompute = previous_player_position != (game.player.pos());
         render_all(&mut tcod, &mut game, &characters, &items, fov_recompute);
 
         tcod.root.flush();
 
         // Handles keys, and exits game if prompted
-        previous_player_position = characters[PLAYER].pos();
+        previous_player_position = game.player.pos();
         let player_action = handle_keys(&mut tcod, &mut game, &mut characters, &mut items);
         if player_action == PlayerAction::Exit { break; }
 
         // Lets monsters take their turn
-        if characters[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
+        if game.player.alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 0..characters.len() {
                 if characters[id].ai.is_some() {
                     Object::ai_take_turn(id, &tcod, &mut game, &mut characters);

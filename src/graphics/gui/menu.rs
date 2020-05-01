@@ -1,6 +1,8 @@
+use crate::*;
 
+const INVENTORY_WIDTH: i32 = 50;
 
-pub fn menu<T: AsRef<str>>(
+fn menu<T: AsRef<str>>(
     header: &str,
     options: &[T],
     width: i32,
@@ -8,7 +10,7 @@ pub fn menu<T: AsRef<str>>(
 ) -> Option<usize> {
 
     // Ensure that the menu stays within the alphabet limit.
-    assert!(options.len <= 26, "Cannot have a menu with more than 26 options.");
+    assert!(options.len() <= 26, "Cannot have a menu with more than 26 options.");
 
     // Calculates the height of the header, and one line per option.
     let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
@@ -52,7 +54,7 @@ pub fn menu<T: AsRef<str>>(
     let key = root.wait_for_keypress(true);
 
     // Convert the ASCII code to an index; If it references an option, return i.
-    it key.printable.is_alphabetic() {
+    if key.printable.is_alphabetic() {
         let index = key.printable.to_ascii_lowercase() as usize - 'a' as usize;
         if index < options.len() {
             Some(index)
@@ -64,15 +66,18 @@ pub fn menu<T: AsRef<str>>(
     }
 }
 
-fn inventory_menu(characters: &[Object], character_id: usize, header: &str, root: &mut Root) -> Option<usize> {
+pub fn inventory_menu(game: &Game, header: &str, root: &mut Root) -> Option<usize> {
+    let empty_vec = Vec::new();
+    let inventory = match &game.player.inventory {
+        Some(items) => items,
+        None => &empty_vec,
+    };
+
     // Show a menu with each inventory item as an option.
     let options = if inventory.len() == 0 {
-        vec!["Inventory is empty.".into()]
-    } else {
-        match characters[character_id].inventory {
-            Some(inventory) => inventory.iter().map(|item| item.name.clone()).collect(),
-            None => None,
-        }
+            vec!["Inventory is empty.".into()]
+        } else {
+            inventory.iter().map(|item| item.name.clone()).collect()
     };
 
     let inventory_index = menu(header, &options, INVENTORY_WIDTH, root);

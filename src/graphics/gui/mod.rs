@@ -1,3 +1,5 @@
+pub mod menu;
+
 use crate::*;
 use crate::objects::*;
 
@@ -23,8 +25,8 @@ fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &Has
     }
 
     // Show the player's stats.
-    let hp = characters[PLAYER].fighter.unwrap().hp;
-    let max_hp = characters[PLAYER].fighter.unwrap().max_hp;
+    let hp = game.player.fighter.unwrap().hp;
+    let max_hp = game.player.fighter.unwrap().max_hp;
     render_bar(
         &mut tcod.panel,
         1,

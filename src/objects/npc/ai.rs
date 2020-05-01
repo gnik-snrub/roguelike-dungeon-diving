@@ -1,6 +1,10 @@
-use crate::{ PLAYER, Tcod };
+use crate::Tcod;
 use crate::environment::{ Game, Map };
 use super::Object;
+
+use rand::Rng;
+
+use tcod::colors::*;
 
 #[derive(Debug)]
 pub enum Ai {
@@ -27,19 +31,47 @@ impl Object {
         ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
     }
 
-    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, game: &mut Game, objects: &mut [Object]) {
+    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, mut game: &mut Game, objects: &mut [Object]) {
         // A basic monster takes its turn. If you can see it, it can also see you!
         let (monster_x, monster_y) = objects[monster_id].pos();
         if tcod.fov.is_in_fov(monster_x, monster_y) {
-            if objects[monster_id].distance_to(&objects[PLAYER]) >= 2.0 {
+            if objects[monster_id].distance_to(&game.player) >= 2.0 {
                 // Move towards player if far away.
-                let (player_x, player_y) = objects[PLAYER].pos();
+                let (player_x, player_y) = game.player.pos();
                 Object::move_towards(monster_id, player_x, player_y, &game.map, objects);
-            } else if objects[PLAYER].fighter.unwrap().hp >= 0 {
+            } else if game.player.fighter.unwrap().hp >= 0 {
                 // Close enough - Attack! (If player is alive)
-                let (monster, player) = Object::mut_two(monster_id, PLAYER, objects);
-                monster.attack(player, game);
+                objects[monster_id].monster_attack(&mut game);
             }
+        }
+    }
+
+    fn monster_attack(&self, game: &mut Game) {
+        let mut rng = rand::thread_rng();
+        let attack = (self.fighter.map_or(0, |f| f.power)) as f32 + rng.gen_range(-1.0, 1.0);
+        let defense = (game.player.fighter.map_or(0, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
+        let level_mod =
+            (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) / 2.0) /
+            (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) * 0.25);
+        let damage = (attack / defense * level_mod).round() as i32;
+        if damage > 0 {
+            // Target takes damage.
+            game.messages.add(
+                format!(
+                    "{} attacks {} dealing {} damage.",
+                    self.name, game.player.name, damage
+                ),
+                self.color,
+            );
+            Object::player_damage(damage, game);
+        } else {
+            game.messages.add(
+                format!(
+                    "{} attacks {} but it has no effect!",
+                    self.name, game.player.name
+                ),
+                WHITE,
+            );
         }
     }
 }

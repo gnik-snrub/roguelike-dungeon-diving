@@ -1,7 +1,6 @@
 pub mod tiles;
 pub mod dungeon;
 
-use crate::PLAYER;
 use crate::graphics::gui::Messages;
 use crate::objects::Object;
 use crate::graphics::gen_colors;
@@ -34,19 +33,23 @@ pub type Map = Vec<Vec<Tile>>;
 pub struct Game {
     pub map: Map,
     pub messages: Messages,
+    pub player: Object,
 }
 
 impl Game {
     pub fn new(mut characters: &mut Vec<Object>, mut items: &mut HashMap<i32, Object>) -> Game {
-        let map = make_map(&mut characters, &mut items);
+        let mut player = Object::player();
+        let map = make_map(&mut player, &mut characters, &mut items);
         Game {
             map: map,
             messages: Messages::new(),
+            player: player,
         }
     }
 }
 
-pub fn make_map(characters: &mut Vec<Object>, items: &mut HashMap<i32, Object>) -> Map {
+
+pub fn make_map(player: &mut Object, characters: &mut Vec<Object>, items: &mut HashMap<i32, Object>) -> Map {
     // Generate dungeon floor colors alongside variation
     let colors = gen_colors();
 
@@ -90,7 +93,7 @@ pub fn make_map(characters: &mut Vec<Object>, items: &mut HashMap<i32, Object>) 
             if rooms.is_empty() {
 
                 // This is the first room, where the player starts at
-                characters[PLAYER].set_pos(new_x, new_y);
+                player.set_pos(new_x, new_y);
 
             } else {
 

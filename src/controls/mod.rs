@@ -1,8 +1,8 @@
 use crate::*;
 use crate::environment::Game;
-
 use crate::Tcod;
 use crate::objects::*;
+use crate::graphics::gui::menu::inventory_menu;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PlayerAction {
@@ -15,7 +15,7 @@ pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Object
     use tcod::input::KeyCode::*;
     use PlayerAction::*;
 
-    let player_alive = characters[PLAYER].alive;
+    let player_alive = game.player.alive;
     match (tcod.key, tcod.key.text(), player_alive) {
         // Movement keys
         ( Key { code: NumPad7, .. }, _, true) => {
@@ -63,7 +63,7 @@ pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Object
             let mut item_id: i32 = -1;
 
             for (key, item) in items.iter() {
-                if (item.pos() == characters[PLAYER].pos()) && (item.item.is_some()) {
+                if (item.pos() == game.player.pos()) && (item.item.is_some()) {
                     item_id = *key
                 }
             }
@@ -81,13 +81,30 @@ pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Object
             }
         }
 
+        ( Key { code: Text, .. }, "i", true) => {
+            // Show the inventory.
+            let inventory_index = inventory_menu(
+                game,
+                "Press the key next to an item to use it, or any other to cancel.\n",
+                &mut tcod.root
+            );
+//            if let Some(inventory_index) = inventory_index {
+//                use_item(inventory_index, tcod, game, objects);
+//            }
+            TookTurn
+        }
+
         // DEBUG-KEYS
         ( Key { code: Text, .. }, "z", true) => { // Prints the list of items on the floor.
             println!("{:?}", items);
             DidntTakeTurn
         }
         ( Key { code: Text, .. }, "x", true) => { // Prints the player's inventory
-            println!("{:?}", characters[PLAYER].inventory.as_ref());
+            println!("{:?}", game.player.inventory.as_ref());
+            DidntTakeTurn
+        }
+        ( Key { code: Text, .. }, "c", true) => {
+//            Object::use_item(1, tcod, game, characters);
             DidntTakeTurn
         }
 
