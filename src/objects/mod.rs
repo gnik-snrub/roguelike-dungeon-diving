@@ -147,7 +147,7 @@ impl Object {
             alive: true,
             corpse_type: "'s bloody corpse".into(),
             fighter: Some(Fighter {
-                level: 10,
+                level: 1,
                 exp: 0,
                 //level_up: 5,
                 max_hp: 30,

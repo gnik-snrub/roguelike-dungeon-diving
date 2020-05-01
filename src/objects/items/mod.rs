@@ -25,13 +25,8 @@ impl Object {
         }
     }
 
-    pub fn garbage() -> Object {
-        let garbage = Object::new_item(0, 0, '`', "BUFFER", BLACK, false);
-        garbage
-    }
-
     pub fn health_pot(x: i32, y: i32) -> Object {
-        let mut health_pot = Object::new_item(x, y, '?', "Health potion", VIOLET, false);
+        let mut health_pot = Object::new_item(x, y, '!', "Health potion", LIGHT_GREEN, false);
         health_pot.item = Some(Item::Heal);
         health_pot
     }

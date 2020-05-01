@@ -2,7 +2,7 @@ pub mod tiles;
 pub mod dungeon;
 
 use crate::PLAYER;
-use crate::graphics::Messages;
+use crate::graphics::gui::Messages;
 use crate::objects::Object;
 use crate::graphics::gen_colors;
 use tiles::Tile;
