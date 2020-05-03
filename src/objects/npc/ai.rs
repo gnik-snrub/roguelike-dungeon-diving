@@ -25,31 +25,31 @@ impl Object {
         Object::move_by(id, dx, dy, map, objects);
     }
 
-    fn distance_to(&self, other: &Object) -> f32 {
+    pub fn distance_to(&self, other: &Object) -> f32 {
         let dx = other.x - self.x;
         let dy = other.y - self.y;
         ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
     }
 
-    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, mut game: &mut Game, objects: &mut [Object]) {
+    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, mut game: &mut Game, objects: &mut [Object], player: &mut Object) {
         // A basic monster takes its turn. If you can see it, it can also see you!
         let (monster_x, monster_y) = objects[monster_id].pos();
         if tcod.fov.is_in_fov(monster_x, monster_y) {
-            if objects[monster_id].distance_to(&game.player) >= 2.0 {
+            if objects[monster_id].distance_to(&player) >= 2.0 {
                 // Move towards player if far away.
-                let (player_x, player_y) = game.player.pos();
+                let (player_x, player_y) = player.pos();
                 Object::move_towards(monster_id, player_x, player_y, &game.map, objects);
-            } else if game.player.fighter.unwrap().hp >= 0 {
+            } else if player.fighter.unwrap().hp >= 0 {
                 // Close enough - Attack! (If player is alive)
-                objects[monster_id].monster_attack(&mut game);
+                objects[monster_id].monster_attack(&mut game, player);
             }
         }
     }
 
-    fn monster_attack(&self, game: &mut Game) {
+    fn monster_attack(&self, game: &mut Game, mut player: &mut Object) {
         let mut rng = rand::thread_rng();
         let attack = (self.fighter.map_or(0, |f| f.power)) as f32 + rng.gen_range(-1.0, 1.0);
-        let defense = (game.player.fighter.map_or(0, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
+        let defense = (player.fighter.map_or(0, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
         let level_mod =
             (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) / 2.0) /
             (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) * 0.25);
@@ -59,16 +59,16 @@ impl Object {
             game.messages.add(
                 format!(
                     "{} attacks {} dealing {} damage.",
-                    self.name, game.player.name, damage
+                    self.name, player.name, damage
                 ),
                 self.color,
             );
-            Object::player_damage(damage, game);
+            Object::player_damage(damage, game, &mut player);
         } else {
             game.messages.add(
                 format!(
                     "{} attacks {} but it has no effect!",
-                    self.name, game.player.name
+                    self.name, player.name
                 ),
                 WHITE,
             );

@@ -13,12 +13,11 @@ pub fn render_all(
     characters: &[Object],
     items: &HashMap<i32, Object>,
     fov_recompute: bool,
+    player: &Object,
 ) {
     if fov_recompute {
         //Recomputes FOV is needed, such as player movement
-        let player = &game.player;
-        tcod.fov
-            .compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
+        tcod.fov.compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
     for y in 0..MAP_HEIGHT {
@@ -50,16 +49,16 @@ pub fn render_all(
         }
     }
 
-    draw_objects(tcod, game, items, characters);
-    render_gui(tcod, game, characters, items);
+    draw_objects(tcod, items, characters, player);
+    render_gui(tcod, game, characters, items, player);
 }
 
-fn draw_objects(tcod: &mut Tcod, game: &Game, items: &HashMap<i32, Object>, characters: &[Object]) {
+fn draw_objects(tcod: &mut Tcod, items: &HashMap<i32, Object>, characters: &[Object], player: &Object) {
 
     draw_items(tcod, items);
     draw_chars(tcod, characters);
     // Finally, it renders the player.
-    game.player.draw(&mut tcod.con);
+    player.draw(&mut tcod.con);
 
     // Blit the contents (items + characters) of "con" to the root console and present it
     blit(

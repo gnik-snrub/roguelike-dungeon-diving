@@ -3,11 +3,11 @@ pub mod menu;
 use crate::*;
 use crate::objects::*;
 
-pub fn render_gui(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &HashMap<i32, Object>) {
-    render_panel(tcod, game, characters, items);
+pub fn render_gui(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &HashMap<i32, Object>, player: &Object) {
+    render_panel(tcod, game, characters, items, player);
 }
 
-fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &HashMap<i32, Object>) {
+fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &HashMap<i32, Object>, player: &Object) {
     // Prepares the GUI panel.
     tcod.panel.set_default_background(BLACK);
     tcod.panel.clear();
@@ -25,8 +25,8 @@ fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &Has
     }
 
     // Show the player's stats.
-    let hp = game.player.fighter.unwrap().hp;
-    let max_hp = game.player.fighter.unwrap().max_hp;
+    let hp = player.fighter.unwrap().hp;
+    let max_hp = player.fighter.unwrap().max_hp;
     render_bar(
         &mut tcod.panel,
         1,
@@ -142,4 +142,38 @@ fn render_bar(
             TextAlignment::Center,
             &format!("{}: {}/{}", name, value, maximum),
         );
+}
+
+pub fn target_tile(
+    tcod: &mut Tcod, game: &mut Game, characters: &[Object],
+    items: &HashMap<i32, Object>, player: &Object,
+    max_range: Option<f32>) -> Option<(i32, i32)> {
+    use tcod::input::KeyCode::Escape;
+
+    loop {
+        // Clears the inventory, renders the screen
+        // and shows the character names beneath the mouse.
+        tcod.root.flush();
+        let event = input::check_for_event(input::KEY_PRESS | input::MOUSE).map(|e| e.1);
+        match event {
+            Some(Event::Mouse(m)) => tcod.mouse = m,
+            Some(Event::Key(k)) => tcod.key = k,
+            None => tcod.key = Default::default(),
+        }
+        render_all(tcod, game, characters, items, false, player);
+
+        let (x, y) = (tcod.mouse.cx as i32, tcod.mouse.cy as i32);
+
+        // Accepts target if the click was in FOV and in range, if range was specified.
+        let in_fov = (x < MAP_WIDTH) && (y < MAP_HEIGHT) && tcod.fov.is_in_fov(x, y);
+        let in_range = max_range.map_or(true, |range| player.distance(x, y) <= range);
+        if tcod.mouse.lbutton_pressed && in_fov && in_range {
+            return Some((x, y));
+        }
+
+        // Cancel the selection using right click, or escape.
+        if tcod.mouse.rbutton_pressed || tcod.key.code == Escape {
+            return None;
+        }
+    }
 }

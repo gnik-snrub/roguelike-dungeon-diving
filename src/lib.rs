@@ -3,7 +3,7 @@ pub mod controls;
 pub mod environment;
 pub mod graphics;
 
-use objects::Object;
+use objects::{ Object, player::Player };
 use environment::*;
 use controls::{ handle_keys, PlayerAction };
 use graphics::render_all;
@@ -65,9 +65,10 @@ pub fn game(mut tcod: &mut Tcod) {
     // Creates game objects
     let mut characters = vec![];
     let mut items = HashMap::new();
+    let mut player = Player::new();
 
     // Generate map to be rendered
-    let mut game = Game::new(&mut characters, &mut items);
+    let mut game = Game::new(&mut characters, &mut items, &mut player.object);
 
     // Populates the FOV map, based on the generated map
     for y in 0..MAP_HEIGHT {
@@ -99,21 +100,21 @@ pub fn game(mut tcod: &mut Tcod) {
         }
 
         // Renders the screen
-        let fov_recompute = previous_player_position != (game.player.pos());
-        render_all(&mut tcod, &mut game, &characters, &items, fov_recompute);
+        let fov_recompute = previous_player_position != (player.object.pos());
+        render_all(&mut tcod, &mut game, &characters, &items, fov_recompute, &mut player.object);
 
         tcod.root.flush();
 
         // Handles keys, and exits game if prompted
-        previous_player_position = game.player.pos();
-        let player_action = handle_keys(&mut tcod, &mut game, &mut characters, &mut items);
+        previous_player_position = player.object.pos();
+        let player_action = handle_keys(&mut tcod, &mut game, &mut characters, &mut items, &mut player.object);
         if player_action == PlayerAction::Exit { break; }
 
         // Lets monsters take their turn
-        if game.player.alive && player_action != PlayerAction::DidntTakeTurn {
+        if player.object.alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 0..characters.len() {
                 if characters[id].ai.is_some() {
-                    Object::ai_take_turn(id, &tcod, &mut game, &mut characters);
+                    Object::ai_take_turn(id, &tcod, &mut game, &mut characters, &mut player.object);
                 }
             }
         }

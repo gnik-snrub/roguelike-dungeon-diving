@@ -33,17 +33,14 @@ pub type Map = Vec<Vec<Tile>>;
 pub struct Game {
     pub map: Map,
     pub messages: Messages,
-    pub player: Object,
 }
 
 impl Game {
-    pub fn new(mut characters: &mut Vec<Object>, mut items: &mut HashMap<i32, Object>) -> Game {
-        let mut player = Object::player();
-        let map = make_map(&mut player, &mut characters, &mut items);
+    pub fn new(mut characters: &mut Vec<Object>, mut items: &mut HashMap<i32, Object>, player: &mut Object) -> Game {
+        let map = make_map(player, &mut characters, &mut items);
         Game {
             map: map,
             messages: Messages::new(),
-            player: player,
         }
     }
 }
@@ -85,7 +82,7 @@ pub fn make_map(player: &mut Object, characters: &mut Vec<Object>, items: &mut H
             // Paints room onto map tiles
             create_room(new_room, &mut map, &colors);
             place_characters(new_room, &map, characters);
-            place_items(new_room, items, &mut item_counter);
+            place_items(new_room, items, &map, characters, &mut item_counter);
 
             // Center coordinates of the new room, will be used later
             let (new_x, new_y) = new_room.center();
@@ -141,7 +138,7 @@ fn place_characters(room: Rect, map: &Map, characters: &mut Vec<Object>) {
     }
 }
 
-fn place_items(room: Rect, items: &mut HashMap<i32, Object>, item_counter: &mut i32) {
+fn place_items(room: Rect, items: &mut HashMap<i32, Object>, map: &Map, characters: &mut Vec<Object>, item_counter: &mut i32) {
     let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
 
     for _ in 0..num_items {
@@ -149,13 +146,23 @@ fn place_items(room: Rect, items: &mut HashMap<i32, Object>, item_counter: &mut 
         let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
         let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
 
-        // Create a health potion.
-        let item = Object::health_pot(x, y);
-        items.insert(*item_counter, item);
-        *item_counter += 1;
-        println!("{:?}", items.len());
+        if !Object::is_blocked(x, y, map, characters) {
+            let dice = rand::random::<f32>();
+            let item = if dice < 0.7 {
+                // Create a health potion.
+                let item = Object::health_pot(x, y);
+                item
+            } else {
+                // Creates a lightning bolt scroll.
+                let item = Object::lightning_bolt_scroll(x, y);
+                item
+            };
+            items.insert(*item_counter, item);
+            *item_counter += 1;
+        }
     }
     println!("{:?}", items);
+    println!("{:?}", items.len());
 }
 
 // --- TO-DO ---

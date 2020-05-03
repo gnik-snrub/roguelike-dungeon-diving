@@ -66,9 +66,9 @@ fn menu<T: AsRef<str>>(
     }
 }
 
-pub fn inventory_menu(game: &Game, header: &str, root: &mut Root) -> Option<usize> {
+pub fn inventory_menu(player: &Object, header: &str, root: &mut Root) -> Option<usize> {
     let empty_vec = Vec::new();
-    let inventory = match &game.player.inventory {
+    let inventory = match &player.inventory {
         Some(items) => items,
         None => &empty_vec,
     };

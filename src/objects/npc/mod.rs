@@ -18,6 +18,14 @@ pub struct Fighter {
     pub on_death: DeathCallback,
 }
 
+impl Fighter {
+    pub fn heal(&mut self, amount: i32) {
+        self.hp += amount;
+        if self.hp > self.max_hp {
+            self.hp = self.max_hp;
+        }
+    }
+}
 // Allows for different death effects based on the enemy killed.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum DeathCallback {
@@ -36,7 +44,7 @@ impl DeathCallback {
 }
 
 impl Object {
-    fn fake_player_death(object: &mut Object, game: &mut Game) {}
+    fn fake_player_death(_object: &mut Object, _game: &mut Game) {}
 
     fn monster_death(monster: &mut Object, game: &mut Game) {
         // Turns monster into a corpse.
