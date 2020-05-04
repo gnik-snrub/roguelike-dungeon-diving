@@ -10,7 +10,7 @@ use rand::*;
 pub fn render_all(
     tcod: &mut Tcod,
     game: &mut Game,
-    characters: &[Object],
+    characters: &[Character],
     items: &HashMap<i32, Object>,
     fov_recompute: bool,
     player: &Object,
@@ -53,7 +53,7 @@ pub fn render_all(
     render_gui(tcod, game, characters, items, player);
 }
 
-fn draw_objects(tcod: &mut Tcod, items: &HashMap<i32, Object>, characters: &[Object], player: &Object) {
+fn draw_objects(tcod: &mut Tcod, items: &HashMap<i32, Object>, characters: &[Character], player: &Object) {
 
     draw_items(tcod, items);
     draw_chars(tcod, characters);
@@ -82,19 +82,19 @@ fn draw_items(tcod: &mut Tcod, items: &HashMap<i32, Object>) {
     }
 }
 
-fn draw_chars(tcod: &mut Tcod, characters: &[Object]) {
+fn draw_chars(tcod: &mut Tcod, characters: &[Character]) {
     // Sorts character list to place non-blocking (corpses) first.
     // This allows living characters to appear on top of them.
     let mut to_draw: Vec<_> = characters
         .iter()
-        .filter(|o| tcod.fov.is_in_fov(o.x, o.y))
+        .filter(|c| tcod.fov.is_in_fov(c.object.x, c.object.y))
         .collect();
-    to_draw.sort_by(|o1, o2| o1.blocks.cmp(&o2.blocks));
+    to_draw.sort_by(|c1, c2| c1.object.blocks.cmp(&c2.object.blocks));
 
     // Draw all characters in the list
-    for object in &to_draw {
-        if tcod.fov.is_in_fov(object.x, object.y) {
-            object.draw(&mut tcod.con);
+    for character in &to_draw {
+        if tcod.fov.is_in_fov(character.object.x, character.object.y) {
+            character.object.draw(&mut tcod.con);
         }
     }
 }

@@ -26,9 +26,17 @@ pub struct Object {
     pub corpse_type: String,
     pub fighter: Option<Fighter>,
     pub ai: Option<Ai>,
-    pub inventory: Option<Vec<Object>>,
     pub item: Option<Item>,
 }
+
+// Character definition
+#[derive(Debug)]
+pub struct Character {
+    pub object: Object,
+    pub inventory: Option<Vec<Object>>
+}
+
+// Item definition
 
 impl Object {
     // Places object on the screen
@@ -38,13 +46,13 @@ impl Object {
     }
 
     // Checks to see if an object is meant to block other objects.
-    pub fn is_blocked(x: i32, y: i32, map: &Map, objects: &[Object]) -> bool {
+    pub fn is_blocked(x: i32, y: i32, map: &Map, characters: &[Character]) -> bool {
         // First test the map tile
         if map[x as usize][y as usize].blocked {
             return true;
         }
         // Checks for any blocking objects
-        objects.iter().any(|object| object.blocks && object.pos() == (x, y))
+        characters.iter().any(|character| character.object.blocks && character.object.pos() == (x, y))
     }
 
     // Returns the x/y coordinates of the object.
@@ -59,10 +67,10 @@ impl Object {
     }
 
     // Moves unit in a direction if the tile isn't blocked
-    pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
-        let (x, y) = objects[id].pos();
+    pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Character]) {
+        let (x, y) = objects[id].object.pos();
         if !Object::is_blocked(x + dx, y + dy, &map, objects) {
-            objects[id].set_pos(x + dx, y + dy);
+            objects[id].object.set_pos(x + dx, y + dy);
         }
     }
 
@@ -87,6 +95,16 @@ impl Object {
     // Find distance between self, and another target.
     pub fn distance(&self, x: i32, y: i32) -> f32 {
         (((x - self.x).pow(2) + (y - self.y).pow(2)) as f32).sqrt()
+    }
+
+    /// heal by the given amount, without going over the maximum
+    pub fn heal(&mut self, amount: i32) {
+        if let Some(ref mut fighter) = self.fighter {
+            fighter.hp += amount;
+            if fighter.hp > fighter.max_hp {
+                fighter.hp = fighter.max_hp;
+            }
+        }
     }
 
     fn _mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut T, &mut T) {

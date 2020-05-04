@@ -11,43 +11,43 @@ pub enum PlayerAction {
     Exit,
 }
 
-pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Object>, items: &mut HashMap<i32, Object>, player: &mut Object) -> PlayerAction {
+pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Character>, items: &mut HashMap<i32, Object>, player: &mut Character) -> PlayerAction {
     use tcod::input::KeyCode::*;
     use PlayerAction::*;
 
-    let player_alive = player.alive;
+    let player_alive = player.object.alive;
     match (tcod.key, tcod.key.text(), player_alive) {
         // Movement keys
         ( Key { code: NumPad7, .. }, _, true) => {
-            Object::player_move_or_attack(-1, -1, game, characters, player);
+            Object::player_move_or_attack(-1, -1, game, characters, &mut player.object);
             TookTurn
         },
         ( Key { code: NumPad8, .. }, _, true) => {
-            Object::player_move_or_attack(0, -1, game, characters, player);
+            Object::player_move_or_attack(0, -1, game, characters, &mut player.object);
             TookTurn
         },
         ( Key { code: NumPad9, .. }, _, true) => {
-            Object::player_move_or_attack(1, -1, game, characters, player);
+            Object::player_move_or_attack(1, -1, game, characters, &mut player.object);
             TookTurn
         },
         ( Key { code: NumPad4, .. }, _, true) => {
-            Object::player_move_or_attack(-1, 0, game, characters, player);
+            Object::player_move_or_attack(-1, 0, game, characters, &mut player.object);
             TookTurn
         },
         ( Key { code: NumPad6, .. }, _, true) => {
-            Object::player_move_or_attack(1, 0, game, characters, player);
+            Object::player_move_or_attack(1, 0, game, characters, &mut player.object);
             TookTurn
         },
         ( Key { code: NumPad1, .. }, _, true) => {
-            Object::player_move_or_attack(-1, 1, game, characters, player);
+            Object::player_move_or_attack(-1, 1, game, characters, &mut player.object);
             TookTurn
         },
         ( Key { code: NumPad2, .. }, _, true) => {
-            Object::player_move_or_attack(0, 1, game, characters, player);
+            Object::player_move_or_attack(0, 1, game, characters, &mut player.object);
             TookTurn
         },
         ( Key { code: NumPad3, .. }, _, true) => {
-            Object::player_move_or_attack(1, 1, game, characters, player);
+            Object::player_move_or_attack(1, 1, game, characters, &mut player.object);
             TookTurn
         },
 
@@ -63,7 +63,7 @@ pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Object
             let mut item_id: i32 = -1;
 
             for (key, item) in items.iter() {
-                if (item.pos() == player.pos()) && (item.item.is_some()) {
+                if (item.pos() == player.object.pos()) && (item.item.is_some()) {
                     item_id = *key
                 }
             }

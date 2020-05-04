@@ -19,13 +19,9 @@ pub struct Fighter {
 }
 
 impl Fighter {
-    pub fn heal(&mut self, amount: i32) {
-        self.hp += amount;
-        if self.hp > self.max_hp {
-            self.hp = self.max_hp;
-        }
-    }
+    
 }
+
 // Allows for different death effects based on the enemy killed.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum DeathCallback {

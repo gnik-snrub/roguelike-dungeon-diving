@@ -2,7 +2,7 @@ use crate::Tcod;
 use crate::environment::{ Game };
 use crate::graphics::gui::target_tile;
 
-use super::Object;
+use super::{ Object, Character };
 use super::npc::{ Fighter, DeathCallback };
 use super::items::*;
 
@@ -11,13 +11,9 @@ use rand::Rng;
 
 use tcod::colors::*;
 
-pub struct Player {
-    pub object: Object,
-}
-
-impl Player {
-    pub fn new() -> Player {
-        Player {
+impl Object {
+    pub fn new_player() -> Character {
+        Character {
             object: Object {
                 x: 0,
                 y: 0,
@@ -38,49 +34,46 @@ impl Player {
                     on_death: DeathCallback::Player,
                 }),
                 ai: None,
-                inventory: Some(Vec::new()),
                 item: None,
             },
+            inventory: Some(Vec::new()),
         }
     }
-}
-
-impl Object {
     // Decides if the player object should move, or attack when inputs are entered.
-    pub fn player_move_or_attack(dx: i32, dy: i32, game: &mut Game, objects: &mut [Object], player: &mut Object) {
+    pub fn player_move_or_attack(dx: i32, dy: i32, game: &mut Game, characters: &mut [Character], player: &mut Object) {
         // The coordinates the player is moving to / attacking
         let x = player.x + dx;
         let y = player.y + dy;
 
         // Try to find an attackable object there
-        let target_id = objects.iter().position(|object| object.fighter.is_some() && object.pos() == (x, y));
+        let target_id = characters.iter().position(|cha| cha.object.fighter.is_some() && cha.object.pos() == (x, y));
 
         // Attack target if found, otherwise move
         match target_id {
             Some(target_id) => {
-                let damage = Object::player_attack(&mut objects[target_id], player);
+                let damage = Object::player_attack(&mut characters[target_id].object, player);
                 if damage > 0 {
                     // Target takes damage.
                     game.messages.add(
                         format!(
                             "{} attacks {} dealing {} damage.",
-                            player.name, objects[target_id].name, damage
+                            player.name, characters[target_id].object.name, damage
                         ),
                         player.color,
                     );
-                    objects[target_id].take_damage(damage, game);
+                    characters[target_id].object.take_damage(damage, game);
                 } else {
                     game.messages.add(
                         format!(
                             "{} attacks {} but it has no effect!",
-                            player.name, objects[target_id].name
+                            player.name, characters[target_id].object.name
                         ),
                         WHITE,
                     );
                 }
             },
             None => {
-                if !Object::is_blocked(x, y, &game.map, objects) {
+                if !Object::is_blocked(x, y, &game.map, characters) {
                     player.set_pos(x, y);
                 }
             }
@@ -126,7 +119,7 @@ impl Object {
     }
 
     // Adds item to player's inventory, and removes from the map.
-    pub fn pick_item_up(object_id: i32, game: &mut Game, items: &mut HashMap<i32, Object>, player: &mut Object) {
+    pub fn pick_item_up(object_id: i32, game: &mut Game, items: &mut HashMap<i32, Object>, player: &mut Character) {
         match &mut player.inventory {
             Some(inventory) => if inventory.len() >= 26 {
                 game.messages.add(
@@ -153,15 +146,16 @@ impl Object {
         }
     }
 
-    pub fn use_item(inventory_id: usize, tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Object>, player: &mut Object) {
+    pub fn use_item(inventory_id: usize, tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Character>, player: &mut Character) {
         match &mut player.inventory {
             Some(inventory) => {
                 if let Some(item) = inventory[inventory_id].item {
                     let on_use = match item {
                         Item::Heal => Object::use_health_potion,
                         Item::LightningBoltScroll => Object::use_lightning_bolt_scroll,
+                        Item::ConfusionScroll => Object::use_confusion_scroll,
                     };
-                    match on_use(inventory_id, tcod, game, &mut player.fighter, player.x, player.y, characters) {
+                    match on_use(inventory_id, tcod, game, &mut player.object, characters) {
                         UseResult::UsedUp => {
                             // Destroy after use, unless it was cancelled for some reason.
                             inventory.remove(inventory_id);
@@ -177,16 +171,17 @@ impl Object {
     }
 
     // Find closest enemy, up to a max range, within the player FOV.
-    pub fn closest_monster(x: i32, y: i32, tcod: &Tcod, objects: &[Object], max_range: i32) -> Option<usize> {
+    pub fn closest_monster(player: &Object, tcod: &Tcod, objects: &[Character], max_range: i32) -> Option<usize> {
         let mut closest_enemy = None;
         let mut closest_dist = (max_range + 1) as f32; // Start with clightly more than max range.
 
-        for (id, object) in objects.iter().enumerate() {
-            if object.fighter.is_some() &&
-            object.ai.is_some() &&
-            tcod.fov.is_in_fov(object.x, object.y) {
+        for (id, character) in objects.iter().enumerate() {
+            let obj_ref = &character.object;
+            if obj_ref.fighter.is_some() &&
+            obj_ref.ai.is_some() &&
+            tcod.fov.is_in_fov(obj_ref.x, obj_ref.y) {
                 // Calculates distance between this object and player.
-                let dist = object.distance_from_object(x, y);
+                let dist = player.distance_to(obj_ref);
                 if dist < closest_dist {
                     // It's closer, so remember this one.
                     closest_enemy = Some(id);
@@ -207,7 +202,7 @@ impl Object {
     pub fn target_monster(
         tcod: &mut Tcod,
         game: &mut Game,
-        characters: &[Object],
+        characters: &[Character],
         items: &HashMap<i32, Object>,
         player: &Object,
         max_range: Option<f32>) -> Option<usize> {
@@ -215,8 +210,8 @@ impl Object {
             match target_tile(tcod, game, characters, items, player, max_range) {
                 Some((x, y)) => {
                     // Return the first monster clicked, or keep looping.
-                    for (id, obj) in characters.iter().enumerate() {
-                        if obj.pos() == (x, y) && obj.fighter.is_some() {
+                    for (id, cha) in characters.iter().enumerate() {
+                        if cha.object.pos() == (x, y) && cha.object.fighter.is_some() {
                             return Some(id);
                         }
                     }

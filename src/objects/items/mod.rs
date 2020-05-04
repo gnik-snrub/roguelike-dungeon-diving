@@ -1,8 +1,8 @@
 use crate::Tcod;
 use crate::environment::Game;
-use super::npc::Fighter;
 
-use super::Object;
+use super::{ Object, Character };
+use crate::objects::npc::ai::Ai;
 
 use tcod::colors::*;
 
@@ -10,6 +10,7 @@ use tcod::colors::*;
 pub enum Item {
     Heal,
     LightningBoltScroll,
+    ConfusionScroll,
 }
 
 pub enum UseResult {
@@ -31,7 +32,6 @@ impl Object {
             corpse_type: name.into(),
             fighter: None,
             ai: None,
-            inventory: None,
             item: None,
         }
     }
@@ -47,20 +47,19 @@ impl Object {
         _inventory_id: usize,
         _tcod: &mut Tcod,
         game: &mut Game,
-        p_fighter: &mut Option<Fighter>,
-        _player_x: i32,
-        _player_y: i32,
-        _characters: &mut Vec<Object>,
+        player: &mut Object,
+        _characters: &mut Vec<Character>,
     ) -> UseResult {
-        // Heal the player.
+        // Establish the healing value.
         let heal_amount = 4;
-        if let Some(fighter) = p_fighter {
+        // Heal the player
+        if let Some(fighter) = player.fighter {
             if fighter.hp == fighter.max_hp {
                 game.messages.add("You are already at full health.", RED);
                 return UseResult::Cancelled;
             }
-            game.messages.add("Your open wounds begin to close up!", LIGHT_GREEN);
-            fighter.heal(heal_amount);
+            game.messages.add("Your wounds start to feel better!", LIGHT_GREEN);
+            player.heal(heal_amount);
             return UseResult::UsedUp;
         }
         UseResult::Cancelled
@@ -77,30 +76,75 @@ impl Object {
         _inventory_id: usize,
         tcod: &mut Tcod,
         game: &mut Game,
-        _p_fighter: &mut Option<Fighter>,
-        player_x: i32,
-        player_y: i32,
-        characters: &mut Vec<Object>,
+        player: &mut Object,
+        characters: &mut Vec<Character>,
     ) -> UseResult {
         // Find the closest enemy (within the max range).
         let lightning_range = 5;
         let lightning_damage = 40;
-        let monster_id = Object::closest_monster(player_x, player_y, tcod, characters, lightning_range);
+        let monster_id = Object::closest_monster(player, tcod, characters, lightning_range);
         if let Some(monster_id) = monster_id {
             // ZzzzzzzzzaAAP!~~
             game.messages.add(
                 format!(
-                    "A lightning bolt strikes the {} with a loud thunder! \n
-                    The damage is {} hit points.",
-                    characters[monster_id].name, lightning_damage
+                    "A lightning bolt strikes the {} with a loud thunder!",
+                    characters[monster_id].object.name
                 ),
-                LIGHT_BLUE,
+                LIGHT_CYAN,
             );
-            characters[monster_id].take_damage(lightning_damage, game);
+            game.messages.add(
+                format!(
+                    "The damage is {} hit points.",
+                    lightning_damage
+                ),
+                LIGHT_CYAN,
+            );
+            characters[monster_id].object.take_damage(lightning_damage, game);
             UseResult::UsedUp
         } else {
             // No enemy found within the max range.
             game.messages.add("No enemy is close enough to strike.", RED);
+            UseResult::Cancelled
+        }
+    }
+
+    // Lightning bolt scroll creator.
+    pub fn confusion_scroll(x: i32, y: i32) -> Object {
+        let mut confusion_scroll = Object::new_item(x, y, '#', "Scroll of confusion", LIGHT_HAN, false);
+        confusion_scroll.item = Some(Item::ConfusionScroll);
+        confusion_scroll
+    }
+    // Lightning bolt scroll use function.
+    pub fn use_confusion_scroll(
+        _inventory_id: usize,
+        tcod: &mut Tcod,
+        game: &mut Game,
+        player: &mut Object,
+        characters: &mut Vec<Character>,
+    ) -> UseResult {
+        // Set up spell variables.
+        let confuse_range = 8;
+        let confuse_num_turns = 10;
+        // Find closest enemy in range, and confuse it.
+        let monster_id = Object::closest_monster(player, tcod, characters, confuse_range);
+        if let Some(monster_id) = monster_id {
+            let old_ai = characters[monster_id].object.ai.take().unwrap_or(Ai::Basic);
+            // Replace the monster's AI with a "confused" state.
+            // After some time, returns to previous AI.
+            characters[monster_id].object.ai = Some(Ai::Confused {
+                previous_ai: Box::new(old_ai),
+                num_turns: confuse_num_turns,
+            });
+            game.messages.add(
+                format!(
+                    "The eyes of {} appear vacant, as it begins to stumble around!",
+                    characters[monster_id].object.name
+                ),
+                LIGHT_HAN,
+            );
+            UseResult::UsedUp
+        } else {
+            game.messages.add("No enemy is close enough to be confused.", RED);
             UseResult::Cancelled
         }
     }

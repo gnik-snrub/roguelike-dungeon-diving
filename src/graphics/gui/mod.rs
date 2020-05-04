@@ -3,11 +3,11 @@ pub mod menu;
 use crate::*;
 use crate::objects::*;
 
-pub fn render_gui(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &HashMap<i32, Object>, player: &Object) {
+pub fn render_gui(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &HashMap<i32, Object>, player: &Object) {
     render_panel(tcod, game, characters, items, player);
 }
 
-fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &HashMap<i32, Object>, player: &Object) {
+fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &HashMap<i32, Object>, player: &Object) {
     // Prepares the GUI panel.
     tcod.panel.set_default_background(BLACK);
     tcod.panel.clear();
@@ -46,7 +46,7 @@ fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Object], items: &Has
         1,
         BackgroundFlag::None,
         TextAlignment::Left,
-        get_names_under_mouse(tcod.mouse, characters, items, &tcod.fov),
+        get_names_under_mouse(tcod.mouse, player, characters, items, &tcod.fov),
     );
 
     // Blit the contents of 'panel' to the root console.
@@ -81,16 +81,20 @@ impl Messages {
     }
 }
 
-fn get_names_under_mouse(mouse: Mouse, characters: &[Object], items: &HashMap<i32, Object>, fov_map: &FovMap) -> String {
+fn get_names_under_mouse(mouse: Mouse, player: &Object, characters: &[Character], items: &HashMap<i32, Object>, fov_map: &FovMap) -> String {
     let (x, y) = (mouse.cx as i32, mouse.cy as i32);
     let mut names = Vec::new();
 
     // Creates a list with the names of all characters at mouse's coordinates in FOV.
     let character_names = characters
         .iter()
-        .filter(|obj| obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y))
-        .map(|obj| obj.name.clone())
+        .filter(|cha| cha.object.pos() == (x, y) && fov_map.is_in_fov(cha.object.x, cha.object.y))
+        .map(|cha| cha.object.name.clone())
         .collect::<Vec<_>>();
+
+    if player.pos() == (x, y) {
+        names.push(player.name.clone());        
+    }
 
     // Adds items to vector first so they always appear at the top of the list.
     for (_, item) in items {
@@ -145,7 +149,7 @@ fn render_bar(
 }
 
 pub fn target_tile(
-    tcod: &mut Tcod, game: &mut Game, characters: &[Object],
+    tcod: &mut Tcod, game: &mut Game, characters: &[Character],
     items: &HashMap<i32, Object>, player: &Object,
     max_range: Option<f32>) -> Option<(i32, i32)> {
     use tcod::input::KeyCode::Escape;

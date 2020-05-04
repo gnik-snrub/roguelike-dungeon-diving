@@ -2,7 +2,7 @@ pub mod tiles;
 pub mod dungeon;
 
 use crate::graphics::gui::Messages;
-use crate::objects::Object;
+use crate::objects::{ Object, Character };
 use crate::graphics::gen_colors;
 use tiles::Tile;
 use dungeon::*;
@@ -36,7 +36,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(mut characters: &mut Vec<Object>, mut items: &mut HashMap<i32, Object>, player: &mut Object) -> Game {
+    pub fn new(mut characters: &mut Vec<Character>, mut items: &mut HashMap<i32, Object>, player: &mut Object) -> Game {
         let map = make_map(player, &mut characters, &mut items);
         Game {
             map: map,
@@ -46,7 +46,7 @@ impl Game {
 }
 
 
-pub fn make_map(player: &mut Object, characters: &mut Vec<Object>, items: &mut HashMap<i32, Object>) -> Map {
+pub fn make_map(player: &mut Object, characters: &mut Vec<Character>, items: &mut HashMap<i32, Object>) -> Map {
     // Generate dungeon floor colors alongside variation
     let colors = gen_colors();
 
@@ -117,7 +117,7 @@ pub fn make_map(player: &mut Object, characters: &mut Vec<Object>, items: &mut H
     map
 }
 
-fn place_characters(room: Rect, map: &Map, characters: &mut Vec<Object>) {
+fn place_characters(room: Rect, map: &Map, characters: &mut Vec<Character>) {
     // Choose random number of monsters
     let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
 
@@ -132,13 +132,13 @@ fn place_characters(room: Rect, map: &Map, characters: &mut Vec<Object>) {
             } else {
                 Object::crystal_lizard(x, y)
             };
-            monster.alive = true;
+            monster.object.alive = true;
             characters.push(monster);
         }
     }
 }
 
-fn place_items(room: Rect, items: &mut HashMap<i32, Object>, map: &Map, characters: &mut Vec<Object>, item_counter: &mut i32) {
+fn place_items(room: Rect, items: &mut HashMap<i32, Object>, map: &Map, characters: &mut Vec<Character>, item_counter: &mut i32) {
     let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
 
     for _ in 0..num_items {
@@ -152,9 +152,12 @@ fn place_items(room: Rect, items: &mut HashMap<i32, Object>, map: &Map, characte
                 // Create a health potion.
                 let item = Object::health_pot(x, y);
                 item
-            } else {
+            } else if dice < 0.85 {
                 // Creates a lightning bolt scroll.
                 let item = Object::lightning_bolt_scroll(x, y);
+                item
+            } else {
+                let item = Object::confusion_scroll(x, y);
                 item
             };
             items.insert(*item_counter, item);
