@@ -93,7 +93,7 @@ fn get_names_under_mouse(mouse: Mouse, player: &Object, characters: &[Character]
         .collect::<Vec<_>>();
 
     if player.pos() == (x, y) {
-        names.push(player.name.clone());        
+        names.push(player.name.clone());
     }
 
     // Adds items to vector first so they always appear at the top of the list.
@@ -149,9 +149,13 @@ fn render_bar(
 }
 
 pub fn target_tile(
-    tcod: &mut Tcod, game: &mut Game, characters: &[Character],
-    items: &HashMap<i32, Object>, player: &Object,
-    max_range: Option<f32>) -> Option<(i32, i32)> {
+    tcod: &mut Tcod,
+    game: &mut Game,
+    characters: &[Character],
+    items: &HashMap<i32, Object>,
+    player: &Object,
+    max_range: Option<f32>
+) -> Option<(i32, i32)> {
     use tcod::input::KeyCode::Escape;
 
     loop {

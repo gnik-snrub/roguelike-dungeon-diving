@@ -11,7 +11,13 @@ pub enum PlayerAction {
     Exit,
 }
 
-pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Character>, items: &mut HashMap<i32, Object>, player: &mut Character) -> PlayerAction {
+pub fn handle_keys(
+    tcod: &mut Tcod,
+    mut game: &mut Game,
+    characters: &mut Vec<Character>,
+    mut items: &mut HashMap<i32, Object>,
+    mut player: &mut Character
+) -> PlayerAction {
     use tcod::input::KeyCode::*;
     use PlayerAction::*;
 
@@ -89,9 +95,21 @@ pub fn handle_keys(tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Charac
                 &mut tcod.root
             );
             if let Some(inventory_index) = inventory_index {
-                Object::use_item(inventory_index, tcod, game, characters, player);
+                Object::use_item(inventory_index, tcod, game, characters, player, items);
             }
             TookTurn
+        }
+
+        ( Key { code: Text, .. }, "d", true) => {
+            // Show the inventory. If an item is selected, drop it.
+            let inventory_index = inventory_menu(
+                &player, "Press a listed key to drop an item, or another key to cancel.\n",
+                &mut tcod.root,
+            );
+            if let Some(inventory_index) = inventory_index {
+                Object::drop_item(inventory_index, &mut game, &mut items, &mut player);
+            }
+            DidntTakeTurn
         }
 
         // DEBUG-KEYS

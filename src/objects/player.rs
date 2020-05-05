@@ -1,6 +1,5 @@
 use crate::Tcod;
 use crate::environment::{ Game };
-use crate::graphics::gui::target_tile;
 
 use super::{ Object, Character };
 use super::npc::{ Fighter, DeathCallback };
@@ -146,7 +145,14 @@ impl Object {
         }
     }
 
-    pub fn use_item(inventory_id: usize, tcod: &mut Tcod, game: &mut Game, characters: &mut Vec<Character>, player: &mut Character) {
+    pub fn use_item(
+        inventory_id: usize,
+        tcod: &mut Tcod,
+        game: &mut Game,
+        characters: &mut Vec<Character>,
+        player: &mut Character,
+        items: &mut HashMap<i32, Object>
+    ) {
         match &mut player.inventory {
             Some(inventory) => {
                 if let Some(item) = inventory[inventory_id].item {
@@ -154,8 +160,9 @@ impl Object {
                         Item::Heal => Object::use_health_potion,
                         Item::LightningBoltScroll => Object::use_lightning_bolt_scroll,
                         Item::ConfusionScroll => Object::use_confusion_scroll,
+                        Item::FireballScroll => Object::use_fireball_scroll,
                     };
-                    match on_use(inventory_id, tcod, game, &mut player.object, characters) {
+                    match on_use(inventory_id, tcod, game, &mut player.object, characters, items) {
                         UseResult::UsedUp => {
                             // Destroy after use, unless it was cancelled for some reason.
                             inventory.remove(inventory_id);
@@ -167,6 +174,44 @@ impl Object {
                 }
             },
             _ => game.messages.add("The item cannot be used.", WHITE),
+        }
+    }
+
+    pub fn drop_item(
+        inventory_id: usize,
+        game: &mut Game,
+        items: &mut HashMap<i32, Object>,
+        player: &mut Character
+    ) {
+        // Finds player location so that the item appears on the same tile.
+        let (x, y) = player.object.pos();
+
+        // Pull the inventory from the "Some" allowing access to the item.
+        match &mut player.inventory {
+            Some(inventory) => {
+                // Removes item from inventory.
+                let mut item = inventory.remove(inventory_id);
+
+                // Sets item position to the player position.
+                item.set_pos(x, y);
+                game.messages.add(format!("You dropped a {}.", item.name), YELLOW);
+
+                // Loops to find an empty key in the item hashmap.
+                let mut new_id = 1;
+                for _ in 0..items.len() {
+                    if items.contains_key(&new_id) {
+                        new_id += 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Inserts the item into the hashmap with its new id.
+                items.insert(new_id, item);
+
+            },
+            // Do nothing if the inventory is inaccessible.
+            _ => (()),
         }
     }
 
@@ -197,27 +242,5 @@ impl Object {
         let dx = self.x - x;
         let dy = self.y - y;
         ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
-    }
-
-    pub fn target_monster(
-        tcod: &mut Tcod,
-        game: &mut Game,
-        characters: &[Character],
-        items: &HashMap<i32, Object>,
-        player: &Object,
-        max_range: Option<f32>) -> Option<usize> {
-        loop {
-            match target_tile(tcod, game, characters, items, player, max_range) {
-                Some((x, y)) => {
-                    // Return the first monster clicked, or keep looping.
-                    for (id, cha) in characters.iter().enumerate() {
-                        if cha.object.pos() == (x, y) && cha.object.fighter.is_some() {
-                            return Some(id);
-                        }
-                    }
-                },
-                None => return None,
-            }
-        }
     }
 }

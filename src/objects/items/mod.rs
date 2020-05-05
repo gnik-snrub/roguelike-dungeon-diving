@@ -1,9 +1,11 @@
 use crate::Tcod;
 use crate::environment::Game;
+use crate::graphics::gui::target_tile;
 
 use super::{ Object, Character };
 use crate::objects::npc::ai::Ai;
 
+use std::collections::HashMap;
 use tcod::colors::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -11,6 +13,7 @@ pub enum Item {
     Heal,
     LightningBoltScroll,
     ConfusionScroll,
+    FireballScroll,
 }
 
 pub enum UseResult {
@@ -49,6 +52,7 @@ impl Object {
         game: &mut Game,
         player: &mut Object,
         _characters: &mut Vec<Character>,
+        _items: &mut HashMap<i32, Object>
     ) -> UseResult {
         // Establish the healing value.
         let heal_amount = 4;
@@ -78,6 +82,7 @@ impl Object {
         game: &mut Game,
         player: &mut Object,
         characters: &mut Vec<Character>,
+        _items: &mut HashMap<i32, Object>
     ) -> UseResult {
         // Find the closest enemy (within the max range).
         let lightning_range = 5;
@@ -108,7 +113,7 @@ impl Object {
         }
     }
 
-    // Lightning bolt scroll creator.
+    // Confusion scroll creator.
     pub fn confusion_scroll(x: i32, y: i32) -> Object {
         let mut confusion_scroll = Object::new_item(x, y, '#', "Scroll of confusion", LIGHT_HAN, false);
         confusion_scroll.item = Some(Item::ConfusionScroll);
@@ -121,31 +126,106 @@ impl Object {
         game: &mut Game,
         player: &mut Object,
         characters: &mut Vec<Character>,
+        items: &mut HashMap<i32, Object>
     ) -> UseResult {
         // Set up spell variables.
         let confuse_range = 8;
         let confuse_num_turns = 10;
-        // Find closest enemy in range, and confuse it.
-        let monster_id = Object::closest_monster(player, tcod, characters, confuse_range);
-        if let Some(monster_id) = monster_id {
-            let old_ai = characters[monster_id].object.ai.take().unwrap_or(Ai::Basic);
-            // Replace the monster's AI with a "confused" state.
-            // After some time, returns to previous AI.
-            characters[monster_id].object.ai = Some(Ai::Confused {
-                previous_ai: Box::new(old_ai),
-                num_turns: confuse_num_turns,
-            });
+        // Asks the player to select an enemy to confuse.
+        game.messages.add(
+            "Left-click an enemy to confuse them, or right-click to cancel...",
+            LIGHTER_HAN,
+        );
+        let (x, y) = match target_tile(tcod, game, characters, items, player, Some(confuse_range as f32)) {
+            Some(tile_pos) => tile_pos,
+            None => {
+                game.messages.add("Nothing happens...", RED);
+                return UseResult::Cancelled;
+            }
+        };
+
+        for cha in characters {
+            if cha.object.pos() == (x, y) {
+                let old_ai = cha.object.ai.take().unwrap_or(Ai::Basic);
+                // Replace the monster's AI with a "confused" state.
+                // After some time, returns to previous AI.
+                cha.object.ai = Some(Ai::Confused {
+                    previous_ai: Box::new(old_ai),
+                    num_turns: confuse_num_turns,
+                });
+                game.messages.add(
+                    format!(
+                        "The eyes of {} appear vacant, as it begins to stumble around!",
+                        cha.object.name
+                    ),
+                    LIGHTER_HAN,
+                );
+            }
+        }
+        UseResult::UsedUp
+    }
+
+    // Fireball scroll creator.
+    pub fn fireball_scroll(x: i32, y: i32) -> Object {
+        let mut fireball_scroll = Object::new_item(x, y, '#', "Scroll of Fireball", FLAME, false);
+        fireball_scroll.item = Some(Item::FireballScroll);
+        fireball_scroll
+    }
+    // Fireball scroll use function.
+    pub fn use_fireball_scroll(
+        _inventory_id: usize,
+        tcod: &mut Tcod,
+        game: &mut Game,
+        player: &mut Object,
+        characters: &mut Vec<Character>,
+        items: &mut HashMap<i32, Object>
+    ) -> UseResult {
+        // Set up spell variables.
+        let fireball_radius = 3;
+        let fireball_damage = 12;
+
+        // Ask the player for a target tile to throw the fireball at.
+        game.messages.add(
+            "Left-click a target tile for the fireball, or right-click to cancel...",
+            LIGHTER_FLAME,
+        );
+        let (x, y) = match target_tile(tcod, game, characters, items, player, None) {
+            Some(tile_pos) => tile_pos,
+            None => return UseResult::Cancelled,
+        };
+        game.messages.add(
+            format!(
+                "The fireball explodes, burning everything within {} tiles!",
+                fireball_radius
+            ),
+            FLAME,
+        );
+
+        // Damages the enemies in range.
+        for cha in characters {
+            if cha.object.distance(x, y) <= fireball_radius as f32 && cha.object.fighter.is_some() {
+                game.messages.add(
+                    format!(
+                        "The {} us burned for {} hit points!",
+                        cha.object.name, fireball_damage
+                    ),
+                    FLAME,
+                );
+                cha.object.take_damage(fireball_damage, game);
+            }
+        }
+
+        // Also damages player, if in range.
+        if player.distance(x, y) <= fireball_radius as f32 {
             game.messages.add(
                 format!(
-                    "The eyes of {} appear vacant, as it begins to stumble around!",
-                    characters[monster_id].object.name
+                    "You were unable to avoid the flames, and took {} damage...",
+                    fireball_damage
                 ),
-                LIGHT_HAN,
+                DARK_FLAME,
             );
-            UseResult::UsedUp
-        } else {
-            game.messages.add("No enemy is close enough to be confused.", RED);
-            UseResult::Cancelled
+            Object::player_damage(fireball_damage, game, player);
         }
+        UseResult::UsedUp
     }
 }

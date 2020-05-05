@@ -152,19 +152,21 @@ fn place_items(room: Rect, items: &mut HashMap<i32, Object>, map: &Map, characte
                 // Create a health potion.
                 let item = Object::health_pot(x, y);
                 item
-            } else if dice < 0.85 {
+            } else if dice < 0.80 {
                 // Creates a lightning bolt scroll.
                 let item = Object::lightning_bolt_scroll(x, y);
                 item
-            } else {
+            } else if dice < 0.90 {
                 let item = Object::confusion_scroll(x, y);
+                item
+            } else {
+                let item = Object::fireball_scroll(x, y);
                 item
             };
             items.insert(*item_counter, item);
             *item_counter += 1;
         }
     }
-    println!("{:?}", items);
     println!("{:?}", items.len());
 }
 

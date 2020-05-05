@@ -18,10 +18,6 @@ pub struct Fighter {
     pub on_death: DeathCallback,
 }
 
-impl Fighter {
-    
-}
-
 // Allows for different death effects based on the enemy killed.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum DeathCallback {

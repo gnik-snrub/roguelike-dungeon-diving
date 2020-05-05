@@ -35,7 +35,7 @@ impl Object {
         ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
     }
 
-    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, mut game: &mut Game, characters: &mut [Character], player: &mut Object) {
+    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, game: &mut Game, characters: &mut [Character], player: &mut Object) {
         use Ai::*;
         if let Some(ai) = characters[monster_id].object.ai.take() {
             let new_ai = match ai {
