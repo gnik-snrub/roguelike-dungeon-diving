@@ -4,7 +4,9 @@ use tcod::colors::*;
 
 use rand::*;
 
-#[derive(Clone, Copy, Debug)]
+use serde::{ Serialize, Deserialize };
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Tile {
     pub blocked: bool,
     pub explored: bool,

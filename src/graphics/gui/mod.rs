@@ -3,6 +3,8 @@ pub mod menu;
 use crate::*;
 use crate::objects::*;
 
+use serde::{ Serialize, Deserialize };
+
 pub fn render_gui(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &HashMap<i32, Object>, player: &Object) {
     render_panel(tcod, game, characters, items, player);
 }
@@ -61,6 +63,7 @@ fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &
     );
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Messages {
     messages: Vec<(String, Color)>,
 }

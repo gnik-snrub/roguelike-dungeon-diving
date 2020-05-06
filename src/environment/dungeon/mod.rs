@@ -4,7 +4,9 @@ use crate::environment::tiles::Tile;
 use std::cmp;
 use tcod::colors::*;
 
-#[derive(Clone, Copy, Debug)]
+use serde::{ Serialize, Deserialize };
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Rect {
     pub x1: i32,
     pub y1: i32,

@@ -8,7 +8,10 @@ use tiles::Tile;
 use dungeon::*;
 
 use std::collections::HashMap;
+
 use rand::*;
+
+use serde::{ Serialize, Deserialize };
 
 use tcod::map::FovAlgorithm;
 
@@ -30,6 +33,7 @@ const MAX_ROOM_ITEMS: i32 = 2;
 
 pub type Map = Vec<Vec<Tile>>;
 
+#[derive(Serialize, Deserialize)]
 pub struct Game {
     pub map: Map,
     pub messages: Messages,
@@ -167,7 +171,6 @@ fn place_items(room: Rect, items: &mut HashMap<i32, Object>, map: &Map, characte
             *item_counter += 1;
         }
     }
-    println!("{:?}", items.len());
 }
 
 // --- TO-DO ---

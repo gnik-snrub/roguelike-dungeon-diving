@@ -1,13 +1,6 @@
 extern crate roguelike;
-use roguelike::*;
-
-const LIMIT_FPS: i32 = 60; // 20 frames-per-second maximum
+use roguelike::run_game;
 
 fn main() {
-
-    let mut tcod = Tcod::new();
-    tcod::system::set_fps(LIMIT_FPS);
-
-    roguelike::game(&mut tcod);
-
+    run_game();
 }

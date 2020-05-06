@@ -10,11 +10,13 @@ use items::*;
 
 use std::cmp::max;
 
+use serde::{ Serialize, Deserialize };
+
 use tcod::colors::*;
 use tcod::console::*;
 
 // Object struct definition.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Object {
     pub x: i32,
     pub y: i32,
@@ -30,14 +32,13 @@ pub struct Object {
 }
 
 // Character definition
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Character {
     pub object: Object,
     pub inventory: Option<Vec<Object>>
 }
 
 // Item definition
-
 impl Object {
     // Places object on the screen
     pub fn draw(&self, con: &mut dyn Console) {

@@ -8,7 +8,9 @@ use crate::objects::npc::ai::Ai;
 use std::collections::HashMap;
 use tcod::colors::*;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+use serde::{ Serialize, Deserialize };
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Item {
     Heal,
     LightningBoltScroll,
@@ -16,6 +18,7 @@ pub enum Item {
     FireballScroll,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum UseResult {
     UsedUp,
     Cancelled,

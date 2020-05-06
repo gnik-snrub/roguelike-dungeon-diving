@@ -4,7 +4,9 @@ use crate::Tcod;
 use crate::objects::*;
 use crate::graphics::gui::menu::inventory_menu;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+use serde::{ Serialize, Deserialize };
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum PlayerAction {
     TookTurn,
     DidntTakeTurn,
@@ -75,7 +77,6 @@ pub fn handle_keys(
             }
 
             if item_id > 0 {
-                println!("{:?}", item_id);
                 Object::pick_item_up(item_id, game, items, player);
                 TookTurn
             } else {

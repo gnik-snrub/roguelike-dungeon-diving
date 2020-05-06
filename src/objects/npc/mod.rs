@@ -4,10 +4,12 @@ pub mod ai;
 use crate::environment::Game;
 use super::Object;
 
+use serde::{ Serialize, Deserialize };
+
 use tcod::colors::*;
 
 // Creates struct that can be applied to fighter-type npcs.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fighter {
     pub level: i32,
     pub exp: i32,
@@ -19,7 +21,7 @@ pub struct Fighter {
 }
 
 // Allows for different death effects based on the enemy killed.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum DeathCallback {
     Player,
     Monster,

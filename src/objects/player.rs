@@ -199,16 +199,12 @@ impl Object {
                 // Loops to find an empty key in the item hashmap.
                 let mut new_id = 1;
                 for _ in 0..items.len() {
-                    if items.contains_key(&new_id) {
-                        new_id += 1;
-                    } else {
-                        break;
+                    if items.contains_key(&new_id) { new_id += 1;
+                    } else { break;
                     }
                 }
-
                 // Inserts the item into the hashmap with its new id.
                 items.insert(new_id, item);
-
             },
             // Do nothing if the inventory is inaccessible.
             _ => (()),

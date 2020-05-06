@@ -7,13 +7,19 @@ use objects::{ Object, Character };
 use environment::*;
 use controls::{ handle_keys, PlayerAction };
 use graphics::render_all;
+use graphics::gui::menu::{ menu, msgbox };
 
 use std::collections::HashMap;
+use std::error::Error;
+use std::fs::File;
+use std::io::{ Read, Write };
 
 use tcod::console::*;
 use tcod::colors::*;
 use tcod::map::Map as FovMap;
 use tcod::input::{ self, Event, Key, Mouse };
+
+const LIMIT_FPS: i32 = 60; // 20 frames-per-second maximum
 
 const SCREEN_WIDTH: i32 = 80;
 const SCREEN_HEIGHT: i32 = 50;
@@ -60,8 +66,72 @@ impl Tcod {
     }
 }
 
-pub fn game(mut tcod: &mut Tcod) {
+pub fn run_game() {
+    let mut tcod = Tcod::new();
+    tcod::system::set_fps(LIMIT_FPS);
 
+    main_menu(&mut tcod);
+}
+
+fn main_menu(mut tcod: &mut Tcod) {
+    let img = tcod::image::Image::from_file("menu_background.png")
+    .ok()
+    .expect("Background image not found");
+
+    while !tcod.root.window_closed() {
+        // Show the background image, at twice the regular console resolution.
+        tcod::image::blit_2x(&img, (0, 0), (-1, -1), &mut tcod.root, (0, 0));
+
+        tcod.root.set_default_foreground(LIGHT_YELLOW);
+        tcod.root.print_ex(
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT / 2 - 4,
+            BackgroundFlag::None,
+            TextAlignment::Center,
+            "TOMBS OF THE ANCIENT KINGS",
+        );
+        tcod.root.print_ex(
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT - 2,
+            BackgroundFlag::None,
+            TextAlignment::Center,
+            "BOTTOM TEXT",
+        );
+
+        // Show options, and wait for the player's choice.
+        let choices = &["Play a new game", "Continue last game", "Quit"];
+        let choice = menu("", choices, 24, &mut tcod.root);
+
+        match choice {
+            Some(0) => {
+                // New game
+                let (mut game, mut characters, mut items, mut player) = new_game(&mut tcod);
+                play_game(&mut tcod, &mut game, &mut characters, &mut items, &mut player);
+            },
+            Some(1) => {
+                // Loads game
+                match load_game() {
+                    Ok((mut game, mut characters, mut items, mut player)) => {
+                        initialise_fov(tcod, &game.map);
+                        play_game(&mut tcod, &mut game, &mut characters, &mut items, &mut player);
+                    },
+                    Err(_e) => {
+                        msgbox("\nNo saved game to load.\n", 24, &mut tcod.root);
+                        continue;
+                    }
+                }
+
+            }
+            Some(2) => {
+                // Quit
+                break;
+            },
+            _ => {},
+        }
+    }
+}
+
+fn new_game(tcod: &mut Tcod) -> (Game, Vec<Character>, HashMap<i32, Object>, Character) {
     // Creates game objects
     let mut characters: Vec<Character> = vec![];
     let mut items = HashMap::new();
@@ -70,16 +140,7 @@ pub fn game(mut tcod: &mut Tcod) {
     // Generate map to be rendered
     let mut game = Game::new(&mut characters, &mut items, &mut player.object);
 
-    // Populates the FOV map, based on the generated map
-    for y in 0..MAP_HEIGHT {
-        for x in 0..MAP_WIDTH {
-            tcod.fov.set(
-                x, y,
-                !game.map[x as usize][y as usize].block_sight,
-                !game.map[x as usize][y as usize].blocked,
-            );
-        }
-    }
+    initialise_fov(tcod, &game.map);
 
     // Intro message
     game.messages.add(
@@ -87,6 +148,52 @@ pub fn game(mut tcod: &mut Tcod) {
         GOLD,
     );
 
+    (game, characters, items, player)
+}
+
+fn initialise_fov(tcod: &mut Tcod, map: &Map) {
+    // Populates the FOV map, based on the generated map
+    for y in 0..MAP_HEIGHT {
+        for x in 0..MAP_WIDTH {
+            tcod.fov.set(
+                x, y,
+                !map[x as usize][y as usize].block_sight,
+                !map[x as usize][y as usize].blocked,
+            );
+        }
+    }
+
+    // Unexplored areas start black (Default background color)
+    tcod.con.clear();
+}
+
+fn save_game(
+    game: &Game,
+    characters: &mut Vec<Character>,
+    items: &mut HashMap<i32, Object>,
+    player: &mut Character,
+) -> Result<(), Box<dyn Error>> {
+    let save_data = serde_json::to_string(&(game, characters, items, player))?;
+    let mut file = File::create("savegame")?;
+    file.write_all(save_data.as_bytes())?;
+    Ok(())
+}
+
+fn load_game() -> Result<(Game, Vec<Character>, HashMap<i32, Object>, Character), Box<dyn Error>> {
+    let mut json_save_state = String::new();
+    let mut file = File::open("savegame")?;
+    file.read_to_string(&mut json_save_state)?;
+    let result = serde_json::from_str::<(Game, Vec<Character>, HashMap<i32, Object>, Character)>(&json_save_state)?;
+    Ok(result)
+}
+
+fn play_game(
+    mut tcod: &mut Tcod,
+    mut game: &mut Game,
+    mut characters: &mut Vec<Character>,
+    mut items: &mut HashMap<i32, Object>,
+    mut player: &mut Character,
+) {
     // Force FOV "recompute" first time through the game loop
     let mut previous_player_position = (-1, -1);
 
@@ -108,7 +215,10 @@ pub fn game(mut tcod: &mut Tcod) {
         // Handles keys, and exits game if prompted
         previous_player_position = player.object.pos();
         let player_action = handle_keys(&mut tcod, &mut game, &mut characters, &mut items, &mut player);
-        if player_action == PlayerAction::Exit { break; }
+        if player_action == PlayerAction::Exit {
+            save_game(game, characters, items, player).unwrap();
+            break;
+        }
 
         // Lets monsters take their turn
         if player.object.alive && player_action != PlayerAction::DidntTakeTurn {

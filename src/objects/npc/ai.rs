@@ -4,9 +4,11 @@ use super::{ Object, super::Character };
 
 use rand::Rng;
 
+use serde::{ Serialize, Deserialize };
+
 use tcod::colors::*;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Ai {
     Basic,
     Confused {

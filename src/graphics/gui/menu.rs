@@ -2,7 +2,7 @@ use crate::*;
 
 const INVENTORY_WIDTH: i32 = 50;
 
-fn menu<T: AsRef<str>>(
+pub fn menu<T: AsRef<str>>(
     header: &str,
     options: &[T],
     width: i32,
@@ -13,7 +13,11 @@ fn menu<T: AsRef<str>>(
     assert!(options.len() <= 26, "Cannot have a menu with more than 26 options.");
 
     // Calculates the height of the header, and one line per option.
-    let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
+    let header_height = if header.is_empty() {
+        0
+    } else {
+        root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header)
+    };
     let height = options.len() as i32 + header_height;
 
     // Create an off-screen console representing the menu's window.
@@ -88,4 +92,9 @@ pub fn inventory_menu(player: &Character, header: &str, root: &mut Root) -> Opti
     } else {
         None
     }
+}
+
+pub fn msgbox(text: &str, width: i32, root: &mut Root) {
+    let options: &[&str] = &[];
+    menu(text, options, width, root);
 }
