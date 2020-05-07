@@ -32,7 +32,7 @@ fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &
     render_bar(
         &mut tcod.panel,
         1,
-        0,
+        1,
         BAR_WIDTH,
         "HP",
         hp,
@@ -41,11 +41,20 @@ fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &
         DARKER_RED,
     );
 
+    // Display the dungeon depth.
+    tcod.panel.print_ex(
+        1,
+        0,
+        BackgroundFlag::None,
+        TextAlignment::Left,
+        format!("Dungeon level: {}", game.dungeon_level),
+    );
+
     // Show the list of objects beneath the mouse.
     tcod.panel.set_default_foreground(LIGHT_GREY);
     tcod.panel.print_ex(
         1,
-        1,
+        2,
         BackgroundFlag::None,
         TextAlignment::Left,
         get_names_under_mouse(tcod.mouse, player, characters, items, &tcod.fov),

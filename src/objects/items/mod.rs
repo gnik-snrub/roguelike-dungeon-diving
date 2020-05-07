@@ -39,6 +39,8 @@ impl Object {
             fighter: None,
             ai: None,
             item: None,
+            level: 1,
+            always_visible: true,
         }
     }
 
@@ -107,7 +109,10 @@ impl Object {
                 ),
                 LIGHT_CYAN,
             );
-            characters[monster_id].object.take_damage(lightning_damage, game);
+            // Damage enemy, and give experience points to player if killed.
+            if let Some(exp) = characters[monster_id].object.take_damage(lightning_damage, game) {
+                player.fighter.as_mut().unwrap().exp += exp;
+            }
             UseResult::UsedUp
         } else {
             // No enemy found within the max range.
@@ -204,6 +209,9 @@ impl Object {
             FLAME,
         );
 
+        // Establish variable to track exp to give to player.
+        let mut exp_to_gain = 0;
+
         // Damages the enemies in range.
         for cha in characters {
             if cha.object.distance(x, y) <= fireball_radius as f32 && cha.object.fighter.is_some() {
@@ -214,9 +222,14 @@ impl Object {
                     ),
                     FLAME,
                 );
-                cha.object.take_damage(fireball_damage, game);
+                // Damage enemy, and aggregate experience points.
+                if let Some(exp) = cha.object.take_damage(fireball_damage, game) {
+                    exp_to_gain += exp;
+                }
             }
         }
+        // Give experience points to player.
+        player.fighter.as_mut().unwrap().exp += exp_to_gain;
 
         // Also damages player, if in range.
         if player.distance(x, y) <= fireball_radius as f32 {

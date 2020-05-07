@@ -99,12 +99,12 @@ impl Object {
 
     fn monster_attack(&self, game: &mut Game, mut player: &mut Object) {
         let mut rng = rand::thread_rng();
-        let attack = (self.fighter.map_or(0, |f| f.power)) as f32 + rng.gen_range(-1.0, 1.0);
-        let defense = (player.fighter.map_or(0, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
-        let level_mod =
-            (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) / 2.0) /
-            (self.fighter.unwrap().level as f32).sqrt().powf((self.fighter.unwrap().level as f32) * 0.25);
-        let damage = (attack / defense * level_mod).round() as i32;
+        let attack = (self.fighter.map_or(1, |f| f.power)) as f32 + rng.gen_range(-1.0, 1.0);
+        let defense = (player.fighter.map_or(1, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
+        let mut level_mod = ((self.level - player.level) / 3) as f32;
+        if level_mod <= 0.0 { level_mod = 1.0; }
+
+        let damage = ((attack * level_mod) - defense).round() as i32;
         if damage > 0 {
             // Target takes damage.
             game.messages.add(

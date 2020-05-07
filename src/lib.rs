@@ -38,6 +38,12 @@ const V_ONE: usize = 1;
 const V_TWO: usize = 2;
 const DARKNESS_MODIFIER: usize = 6;
 
+const LEVEL_UP_BASE: i32 = 200;
+const LEVEL_UP_FACTOR: i32 = 150;
+const LEVEL_SCREEN_WIDTH: i32 = 40;
+
+const CHARACTER_SCREEN_WIDTH: i32 = 30;
+
 pub struct Tcod {
     pub root: Root,
     pub con: Offscreen,
@@ -211,6 +217,9 @@ fn play_game(
         render_all(&mut tcod, &mut game, &characters[..], &items, fov_recompute, &mut player.object);
 
         tcod.root.flush();
+
+        // Level up if needed.
+        Object::level_up(tcod, game, &mut player.object);
 
         // Handles keys, and exits game if prompted
         previous_player_position = player.object.pos();

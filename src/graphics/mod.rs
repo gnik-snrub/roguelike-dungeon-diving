@@ -49,14 +49,14 @@ pub fn render_all(
         }
     }
 
-    draw_objects(tcod, items, characters, player);
+    draw_objects(tcod, game, items, characters, player);
     render_gui(tcod, game, characters, items, player);
 }
 
-fn draw_objects(tcod: &mut Tcod, items: &HashMap<i32, Object>, characters: &[Character], player: &Object) {
+fn draw_objects(tcod: &mut Tcod, game: &mut Game, items: &HashMap<i32, Object>, characters: &[Character], player: &Object) {
 
-    draw_items(tcod, items);
-    draw_chars(tcod, characters);
+    draw_items(tcod, game, items);
+    draw_chars(tcod, game, characters);
     // Finally, it renders the player.
     player.draw(&mut tcod.con);
 
@@ -72,30 +72,30 @@ fn draw_objects(tcod: &mut Tcod, items: &HashMap<i32, Object>, characters: &[Cha
     );
 }
 
-fn draw_items(tcod: &mut Tcod, items: &HashMap<i32, Object>) {
-    // Draw all items in the map.
-    // This takes place before the characters to place items on the lower Z-level.
-    for (_, item) in items.iter() {
-        if tcod.fov.is_in_fov(item.x, item.y) {
+fn draw_items(tcod: &mut Tcod, game: &mut Game, items: &HashMap<i32, Object>) {
+    for item in items.values() {
+        if tcod.fov.is_in_fov(item.x, item.y) ||
+            item.always_visible && game.map[item.x as usize][item.y as usize].explored {
             item.draw(&mut tcod.con);
         }
     }
 }
 
-fn draw_chars(tcod: &mut Tcod, characters: &[Character]) {
+fn draw_chars(tcod: &mut Tcod, game: &mut Game, characters: &[Character]) {
     // Sorts character list to place non-blocking (corpses) first.
     // This allows living characters to appear on top of them.
     let mut to_draw: Vec<_> = characters
         .iter()
-        .filter(|c| tcod.fov.is_in_fov(c.object.x, c.object.y))
+        .filter(|c| {
+            tcod.fov.is_in_fov(c.object.x, c.object.y) ||
+            (c.object.always_visible && game.map[c.object.x as usize][c.object.y as usize].explored)
+        })
         .collect();
     to_draw.sort_by(|c1, c2| c1.object.blocks.cmp(&c2.object.blocks));
 
     // Draw all characters in the list
     for character in &to_draw {
-        if tcod.fov.is_in_fov(character.object.x, character.object.y) {
-            character.object.draw(&mut tcod.con);
-        }
+        character.object.draw(&mut tcod.con);
     }
 }
 

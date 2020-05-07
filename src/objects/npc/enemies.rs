@@ -17,6 +17,8 @@ impl Object {
             fighter: None,
             ai: Some(Ai::Basic),
             item: None,
+            level: 1,
+            always_visible: false,
             },
             inventory: None,
         }
@@ -25,12 +27,11 @@ impl Object {
     pub fn fire_elemental(x: i32, y: i32) -> Character {
         let mut fire_elemental = Object::new_enemy(x, y, 'f', tcod::colors::LIGHT_AMBER, "Fire Elemental", true, " ashes");
         fire_elemental.object.fighter = Some(Fighter {
-            level: 1,
-            exp: 0,
+            exp: 35,
             max_hp: 12,
             hp: 12,
-            defense: 1,
-            power: 4,
+            defense: 0,
+            power: 3,
             on_death: DeathCallback::Monster,
         });
         fire_elemental
@@ -39,12 +40,11 @@ impl Object {
     pub fn crystal_lizard(x: i32, y: i32) -> Character {
         let mut crystal_lizard = Object::new_enemy(x, y, 'C', tcod::colors::LIGHT_SKY, "Crystal Lizard", true, " shards");
         crystal_lizard.object.fighter = Some(Fighter {
-            level: 1,
-            exp: 0,
+            exp: 100,
             max_hp: 8,
             hp: 8,
-            defense: 3,
-            power: 2,
+            defense: 2,
+            power: 3,
             on_death: DeathCallback::Monster,
         });
         crystal_lizard

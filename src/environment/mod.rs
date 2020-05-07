@@ -1,6 +1,7 @@
 pub mod tiles;
 pub mod dungeon;
 
+use crate::{ Tcod, initialise_fov };
 use crate::graphics::gui::Messages;
 use crate::objects::{ Object, Character };
 use crate::graphics::gen_colors;
@@ -14,6 +15,7 @@ use rand::*;
 use serde::{ Serialize, Deserialize };
 
 use tcod::map::FovAlgorithm;
+use tcod::colors::*;
 
 // Determines Field-Of-View
 pub const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic; // Default FOV Algorithm
@@ -37,6 +39,7 @@ pub type Map = Vec<Vec<Tile>>;
 pub struct Game {
     pub map: Map,
     pub messages: Messages,
+    pub dungeon_level: u32,
 }
 
 impl Game {
@@ -45,12 +48,41 @@ impl Game {
         Game {
             map: map,
             messages: Messages::new(),
+            dungeon_level: 1,
         }
     }
 }
 
+pub fn next_level(
+    tcod: &mut Tcod,
+    game: &mut Game,
+    player: &mut Object,
+    characters: &mut Vec<Character>,
+    items: &mut HashMap<i32, Object>
+) {
+    game.messages.add(
+        "You take a moment to rest, and recover your strenght.",
+        GREEN,
+    );
+    let heal_hp = player.fighter.map_or(0, |f| f.max_hp / 2);
+    player.heal(heal_hp);
+
+    game.messages.add(
+        "After taking a moment to rest, you dive deeper into the caverns...",
+        RED,
+    );
+
+    // Keeps track of dungeon depth, makes new dungeon map, and generates FOV map.
+    game.dungeon_level += 1;
+    game.map = make_map(player, characters, items);
+    initialise_fov(tcod, &game.map);
+}
 
 pub fn make_map(player: &mut Object, characters: &mut Vec<Character>, items: &mut HashMap<i32, Object>) -> Map {
+    // Ensures that there are no existing entities in the character, or item collections.
+    characters.clear();
+    items.clear();
+
     // Generate dungeon floor colors alongside variation
     let colors = gen_colors();
 
@@ -117,6 +149,19 @@ pub fn make_map(player: &mut Object, characters: &mut Vec<Character>, items: &mu
 
         rooms.push(new_room)
     }
+
+    // Create stairs at the center of the last room.
+    let (last_room_x, last_room_y) = rooms[rooms.len() - 1].center();
+    let stairs = create_stairs(last_room_x, last_room_y);
+    let mut stairs_id = 1; // Sets up id for stairs to use in items hashmap.
+    for _ in 0..items.len() {
+        if items.contains_key(&stairs_id) {
+            stairs_id += 1;
+        } else {
+            break;
+        }
+    }
+    items.insert(stairs_id, stairs); // Finally, inserts stairs into the items hashmap.
 
     map
 }

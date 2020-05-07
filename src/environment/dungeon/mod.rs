@@ -1,5 +1,6 @@
 use crate::environment::Map;
 use crate::environment::tiles::Tile;
+use crate::objects::Object;
 
 use std::cmp;
 use tcod::colors::*;
@@ -60,5 +61,23 @@ pub fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map, colors: &[Color;
     // Vertical tunnel. Functions essentially the same as the horizontal tunnel
     for y in cmp::min(y1, y2)..(cmp::max(y1, y2) + 1) {
         map[x as usize][y as usize] = Tile::empty(colors);
+    }
+}
+
+pub fn create_stairs(x: i32, y: i32) -> Object {
+    Object {
+        x: x,
+        y: y,
+        char: '<',
+        color: WHITE,
+        name: "Stairs".into(),
+        blocks: false,
+        alive: false,
+        corpse_type: "Stairs".into(),
+        fighter: None,
+        ai: None,
+        item: None,
+        level: 1,
+        always_visible: true,
     }
 }

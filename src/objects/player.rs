@@ -1,9 +1,11 @@
+use crate::{ LEVEL_UP_FACTOR, LEVEL_UP_BASE, LEVEL_SCREEN_WIDTH };
 use crate::Tcod;
 use crate::environment::{ Game };
 
 use super::{ Object, Character };
 use super::npc::{ Fighter, DeathCallback };
 use super::items::*;
+use crate::graphics::gui::menu::menu;
 
 use std::collections::HashMap;
 use rand::Rng;
@@ -23,9 +25,7 @@ impl Object {
                 alive: true,
                 corpse_type: "'s bloody corpse".into(),
                 fighter: Some(Fighter {
-                    level: 1,
                     exp: 0,
-                    //level_up: 5,
                     max_hp: 30,
                     hp: 30,
                     defense: 2,
@@ -34,6 +34,8 @@ impl Object {
                 }),
                 ai: None,
                 item: None,
+                level: 1,
+                always_visible: false,
             },
             inventory: Some(Vec::new()),
         }
@@ -60,7 +62,9 @@ impl Object {
                         ),
                         player.color,
                     );
-                    characters[target_id].object.take_damage(damage, game);
+                    if let Some(exp) = characters[target_id].object.take_damage(damage, game) {
+                        player.fighter.as_mut().unwrap().exp += exp;
+                    }
                 } else {
                     game.messages.add(
                         format!(
@@ -85,10 +89,10 @@ impl Object {
         let mut rng = rand::thread_rng();
         let attack = (player.fighter.map_or(0, |f| f.power)) as f32 + rng.gen_range(-1.0, 1.0);
         let defense = (target.fighter.map_or(0, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
-        let level_mod =
-            (player.fighter.unwrap().level as f32).sqrt().powf((player.fighter.unwrap().level as f32) / 2.0) /
-            (player.fighter.unwrap().level as f32).sqrt().powf((player.fighter.unwrap().level as f32) * 0.25);
-        let damage = (attack / defense * level_mod).round() as i32;
+        let mut level_mod = ((player.level - target.level) / 3) as f32;
+        if level_mod <= 0.0 { level_mod = 1.0; }
+
+        let damage = ((attack * level_mod) - defense).round() as i32;
         damage
     }
 
@@ -115,6 +119,52 @@ impl Object {
         player.char = '%';
         player.color = DARK_RED;
         player.name = format!("{}{}", player.name, player.corpse_type);
+    }
+
+    pub fn level_up(tcod: &mut Tcod, game: &mut Game, player: &mut Object) {
+        let level_up_xp = LEVEL_UP_BASE + player.level * LEVEL_UP_FACTOR;
+
+        // Check if the player has enough exp to level up.
+        if player.fighter.as_ref().map_or(0, |f| f.exp) >= level_up_xp {
+            // Success - Level up!
+            player.level += 1;
+            game.messages.add(
+                format!(
+                    "Your power grows - You have reached level {}!",
+                    player.level
+                ),
+                GOLD,
+            );
+            let fighter = player.fighter.as_mut().unwrap();
+            let mut choice = None;
+            while choice.is_none() {
+                // Continuously requests for a choice to be made, until it is made.
+                choice = menu(
+                    "Level up! Choose a state to raise:\n",
+                    &[
+                        format!("Constitution (+20 HP, from {})", fighter.max_hp),
+                        format!("Strength (+1 Attack, from {})", fighter.power),
+                        format!("Agility (+1 Defense, from {})", fighter.defense),
+                    ],
+                    LEVEL_SCREEN_WIDTH,
+                    &mut tcod.root,
+                );
+            }
+            fighter.exp -= level_up_xp;
+            match choice.unwrap() {
+                0 => {
+                    fighter.max_hp += 20;
+                    fighter.hp += 20;
+                },
+                1 => {
+                    fighter.power += 1;
+                },
+                2 => {
+                    fighter.defense += 1;
+                },
+                _ => unreachable!(),
+            }
+        }
     }
 
     // Adds item to player's inventory, and removes from the map.
@@ -199,8 +249,10 @@ impl Object {
                 // Loops to find an empty key in the item hashmap.
                 let mut new_id = 1;
                 for _ in 0..items.len() {
-                    if items.contains_key(&new_id) { new_id += 1;
-                    } else { break;
+                    if items.contains_key(&new_id) {
+                        new_id += 1;
+                    } else {
+                        break;
                     }
                 }
                 // Inserts the item into the hashmap with its new id.

@@ -29,6 +29,8 @@ pub struct Object {
     pub fighter: Option<Fighter>,
     pub ai: Option<Ai>,
     pub item: Option<Item>,
+    pub level: i32,
+    pub always_visible: bool,
 }
 
 // Character definition
@@ -76,7 +78,7 @@ impl Object {
     }
 
     // Function to allow fighter-enabled objects to take damage
-    fn take_damage(&mut self, damage: i32, game: &mut Game) {
+    fn take_damage(&mut self, damage: i32, game: &mut Game) -> Option<i32> {
         // Apply damage if possible.
         if let Some(fighter) = self.fighter.as_mut() {
             if damage > 0 {
@@ -89,8 +91,10 @@ impl Object {
             if fighter.hp <= 0 {
                 self.alive = false;
                 fighter.on_death.callback(self, game);
+                return Some(fighter.exp);
             }
         }
+        None
     }
 
     // Find distance between self, and another target.

@@ -11,7 +11,6 @@ use tcod::colors::*;
 // Creates struct that can be applied to fighter-type npcs.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fighter {
-    pub level: i32,
     pub exp: i32,
     pub max_hp: i32,
     pub hp: i32,
@@ -43,7 +42,13 @@ impl Object {
     fn monster_death(monster: &mut Object, game: &mut Game) {
         // Turns monster into a corpse.
         // No longer blocks, attacks, or moves.
-        game.messages.add(format!("{} is dead!", monster.name), DARK_RED);
+        game.messages.add(
+            format!(
+                "{} is dead! You gain {} experience points.",
+                monster.name,
+                monster.fighter.unwrap().exp
+            ),
+            DARK_RED);
         monster.color = DARK_RED;
         monster.blocks = false;
         monster.fighter = None;
