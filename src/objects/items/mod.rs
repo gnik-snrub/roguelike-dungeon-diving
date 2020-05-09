@@ -60,7 +60,7 @@ impl Object {
         _items: &mut HashMap<i32, Object>
     ) -> UseResult {
         // Establish the healing value.
-        let heal_amount = 4;
+        let heal_amount = 40;
         // Heal the player
         if let Some(fighter) = player.fighter {
             if fighter.hp == fighter.max_hp {
@@ -190,7 +190,7 @@ impl Object {
     ) -> UseResult {
         // Set up spell variables.
         let fireball_radius = 3;
-        let fireball_damage = 12;
+        let fireball_damage = 25;
 
         // Ask the player for a target tile to throw the fireball at.
         game.messages.add(

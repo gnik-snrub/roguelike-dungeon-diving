@@ -99,7 +99,7 @@ pub fn handle_keys(
             }
         },
 
-        ( Key { code: Text, .. }, "i", true) => {
+        ( Key { code: Text, .. }, "I", true) => {
             // Show the inventory.
             let inventory_index = inventory_menu(
                 player,
@@ -112,19 +112,7 @@ pub fn handle_keys(
             TookTurn
         },
 
-        ( Key { code: Text, .. }, "d", true) => {
-            // Show the inventory. If an item is selected, drop it.
-            let inventory_index = inventory_menu(
-                &player, "Press a listed key to drop an item, or another key to cancel.\n",
-                &mut tcod.root,
-            );
-            if let Some(inventory_index) = inventory_index {
-                Object::drop_item(inventory_index, &mut game, &mut items, &mut player);
-            }
-            DidntTakeTurn
-        },
-
-        ( Key { code: Text, .. }, "c", true) => {
+        ( Key { code: Text, .. }, "C", true) => {
             // Displays character information.
             let level = player.object.level;
             let level_up_xp = LEVEL_UP_BASE + player.object.level * LEVEL_UP_FACTOR;
@@ -143,7 +131,18 @@ Defense: {}",
                 );
                 msgbox(&msg, CHARACTER_SCREEN_WIDTH, &mut tcod.root);
             }
+            DidntTakeTurn
+        },
 
+        ( Key { code: Text, .. }, "D", true) => {
+            // Show the inventory. If an item is selected, drop it.
+            let inventory_index = inventory_menu(
+                &player, "Press a listed key to drop an item, or another key to cancel.\n",
+                &mut tcod.root,
+            );
+            if let Some(inventory_index) = inventory_index {
+                Object::drop_item(inventory_index, &mut game, &mut items, &mut player);
+            }
             DidntTakeTurn
         },
 
