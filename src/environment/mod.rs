@@ -1,12 +1,11 @@
-pub mod tiles;
-pub mod dungeon;
+pub mod map;
+use map::tiles::Tile;
+use map::*;
 
 use crate::{ Tcod, initialise_fov };
 use crate::graphics::gui::Messages;
 use crate::objects::{ Object, Character, items::Item };
 use crate::graphics::gen_colors;
-use tiles::Tile;
-use dungeon::*;
 
 use std::collections::HashMap;
 
@@ -31,6 +30,13 @@ pub const MAP_HEIGHT: i32 = 43;
 const ROOM_MAX_SIZE: i32 = 12;
 const ROOM_MIN_SIZE: i32 = 4;
 const MAX_ROOMS: i32 = 18;
+
+/*#[derive(Serialize, Deserialize)]
+pub struct Map {
+    tiles: Vec<Vec<Tile>>,
+    rooms: Vec<Rect>,
+    corridors: Vec<Rect>,
+}*/
 
 pub type Map = Vec<Vec<Tile>>;
 
@@ -96,12 +102,6 @@ pub fn make_map(
     //Creates vector to store rooms
     let mut rooms: Vec<Rect> = vec![];
 
-    // Determines dungeon gen path to follow
-    // <0.5 should appear more ruinous
-    // >0.5 should appear more designed, and constructed
-    let world_path = rand::random::<f32>();
-    println!("World gen = {}", world_path);
-
     let mut item_counter = 1;
 
     for _ in 0..MAX_ROOMS {
@@ -118,7 +118,7 @@ pub fn make_map(
         let failed = rooms.iter().any(|other_room| new_room.intersects_with(other_room));
 
         // Adds in rooms according to world path value
-        if (world_path < 0.5 && (!failed || failed)) || (world_path > 0.5 && !failed) {
+        if !failed {
             // Paints room onto map tiles
             create_room(new_room, &mut map, &colors);
             place_characters(new_room, &map, characters, level);
@@ -234,14 +234,16 @@ fn place_characters(room: Rect, map: &Map, characters: &mut Vec<Character>, leve
     let monster_choice = WeightedChoice::new(monster_chances);
 
     for _ in 0..num_monsters {
+        let level_up = level - 1;
+
         // Choose random spot for the monster
         let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
         let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
 
         if !Object::is_blocked(x, y, map, characters) {
             let mut monster = match monster_choice.ind_sample(&mut rand::thread_rng()) {
-                "fire_elemental" => Object::fire_elemental(x, y),
-                "crystal_lizard" => Object::crystal_lizard(x, y),
+                "fire_elemental" => Object::fire_elemental(x, y, level_up),
+                "crystal_lizard" => Object::crystal_lizard(x, y, level_up),
                 _ => unreachable!(),
             };
             monster.object.alive = true;

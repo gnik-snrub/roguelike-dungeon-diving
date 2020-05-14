@@ -1,3 +1,5 @@
+pub mod tiles;
+
 use crate::environment::Map;
 use crate::environment::tiles::Tile;
 use crate::objects::Object;

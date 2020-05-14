@@ -10,6 +10,21 @@ use tcod::colors::*;
 
 use serde::{ Serialize, Deserialize };
 
+// An object that can be equipped, yielding bonuses.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Equipment {
+    slot: Slot,
+    equipped: bool,
+}
+
+// Slot for equipment piece to be attached to.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+enum Slot {
+    LeftHand,
+    RightHand,
+    Head,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Item {
     Heal,
