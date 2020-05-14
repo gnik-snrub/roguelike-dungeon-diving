@@ -18,7 +18,7 @@ pub fn handle_keys(
     mut game: &mut Game,
     characters: &mut Vec<Character>,
     mut items: &mut HashMap<i32, Object>,
-    mut player: &mut Character
+    mut player: &mut Character,
 ) -> PlayerAction {
     use tcod::input::KeyCode::*;
     use PlayerAction::*;

@@ -10,27 +10,15 @@ use tcod::colors::*;
 
 use serde::{ Serialize, Deserialize };
 
-// An object that can be equipped, yielding bonuses.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Equipment {
-    slot: Slot,
-    equipped: bool,
-}
-
-// Slot for equipment piece to be attached to.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-enum Slot {
-    LeftHand,
-    RightHand,
-    Head,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Item {
     Heal,
     LightningBoltScroll,
     ConfusionScroll,
     FireballScroll,
+    HpUp,
+    PowUp,
+    DefUp,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -258,5 +246,74 @@ impl Object {
             Object::player_damage(fireball_damage, game, player);
         }
         UseResult::UsedUp
+    }
+
+    pub fn health_up(x: i32, y: i32) -> Object {
+        let mut health_up = Object::new_item(x, y, '/', "Kale", LIGHTER_LIME, false);
+        health_up.item = Some(Item::HpUp);
+        health_up
+    }
+    // Health up use function.
+    pub fn use_health_up(
+        _inventory_id: usize,
+        _tcod: &mut Tcod,
+        game: &mut Game,
+        player: &mut Object,
+        _characters: &mut Vec<Character>,
+        _items: &mut HashMap<i32, Object>
+    ) -> UseResult {
+        // Buff the player
+        if let Some(ref mut fighter) = player.fighter {
+            game.messages.add("You eat the kale, and immediately feel healthier.", LIGHTEST_LIME);
+            fighter.max_hp += 5 * (game.dungeon_level / 5) as i32;
+            return UseResult::UsedUp;
+        }
+        UseResult::Cancelled
+    }
+
+    pub fn power_up(x: i32, y: i32) -> Object {
+        let mut power_up = Object::new_item(x, y, '+', "Creatine Powder", LIGHT_CRIMSON, false);
+        power_up.item = Some(Item::PowUp);
+        power_up
+    }
+    // Power up use function.
+    pub fn use_power_up(
+        _inventory_id: usize,
+        _tcod: &mut Tcod,
+        game: &mut Game,
+        player: &mut Object,
+        _characters: &mut Vec<Character>,
+        _items: &mut HashMap<i32, Object>
+    ) -> UseResult {
+        // Buff the player
+        if let Some(ref mut fighter) = player.fighter {
+            game.messages.add("You consume the creatine, and your shirt tears a little bit.", LIGHTER_CRIMSON);
+            fighter.power += 1 * (game.dungeon_level / 10) as i32;
+            return UseResult::UsedUp;
+        }
+        UseResult::Cancelled
+    }
+
+    pub fn defense_up(x: i32, y: i32) -> Object {
+        let mut defense_up = Object::new_item(x, y, '~', "Quinoa", PURPLE, false);
+        defense_up.item = Some(Item::DefUp);
+        defense_up
+    }
+    // Defense up use function.
+    pub fn use_defense_up(
+        _inventory_id: usize,
+        _tcod: &mut Tcod,
+        game: &mut Game,
+        player: &mut Object,
+        _characters: &mut Vec<Character>,
+        _items: &mut HashMap<i32, Object>
+    ) -> UseResult {
+        // Buff the player
+        if let Some(ref mut fighter) = player.fighter {
+            game.messages.add("You eat the quinoa, and feel your energy strengthen.", LIGHT_PURPLE);
+            fighter.defense += 1 * (game.dungeon_level / 10) as i32;
+            return UseResult::UsedUp;
+        }
+        UseResult::Cancelled
     }
 }

@@ -7,8 +7,8 @@ https://tomassedovic.github.io/roguelike-tutorial/index.html
 ## Addition features that I'd like to implement include:
 
 - x Tweak the world gen to make it more interesting than just rectangles.
-- x Add in secret passages where <=2 tile wide walls exist.
-- x Connect dead-end hallways to other rooms.
+- ✓ Add in secret passages
+- ✓ Connect dead-end hallways to other rooms.
 - x Give the player character the ability to steal, and upgrade the powers of monster he slays.
 - x Possibly add in a random monster generator.
 - ✓ Create more color variance in the world tiles.

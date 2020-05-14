@@ -35,12 +35,7 @@ impl Tile {
     }
 
     pub fn wall(colors: &[Color; 7]) -> Tile {
-        let max_chance = rand::thread_rng().gen_range(4, 15);
-        let color_light = match rand::thread_rng().gen_range(1, max_chance) {
-            1 => colors[LIGHT_WALL_COLOR + V_ONE],
-            2 => colors[LIGHT_WALL_COLOR + V_TWO],
-            _ => colors[LIGHT_WALL_COLOR]
-        };
+        let color_light = colors[LIGHT_WALL_COLOR];
         let color_dark = color_light - colors[DARKNESS_MODIFIER];
 
         Tile {
@@ -51,8 +46,17 @@ impl Tile {
             color_dark: color_dark,
         }
     }
-}
 
-// Bring color values into tiles.
-// When rendering tiles, pull color value from the tile struct itself.
-// This *SHOULD* stop the flashing, and also allow for randomness rather than patterns.
+    pub fn hidden_passage(colors: &[Color; 7]) -> Tile {
+        let color_light = colors[LIGHT_WALL_COLOR];
+        let color_dark = color_light - colors[DARKNESS_MODIFIER];
+
+        Tile {
+            blocked: false,
+            explored: false,
+            block_sight: true,
+            color_light: color_light,
+            color_dark: color_dark,
+        }
+    }
+}

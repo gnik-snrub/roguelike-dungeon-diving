@@ -31,13 +31,6 @@ const ROOM_MAX_SIZE: i32 = 12;
 const ROOM_MIN_SIZE: i32 = 4;
 const MAX_ROOMS: i32 = 18;
 
-/*#[derive(Serialize, Deserialize)]
-pub struct Map {
-    tiles: Vec<Vec<Tile>>,
-    rooms: Vec<Rect>,
-    corridors: Vec<Rect>,
-}*/
-
 pub type Map = Vec<Vec<Tile>>;
 
 #[derive(Serialize, Deserialize)]
@@ -287,7 +280,9 @@ fn place_items(
         Weighted {
             weight: from_dungeon_level(
                 &[
-                    Transition { level: 6, value: 25, }
+                    Transition { level: 6, value: 25, },
+                    Transition { level: 8, value: 50, },
+                    Transition { level: 10, value: 10, },
                 ],
                 level,
             ),
@@ -296,11 +291,39 @@ fn place_items(
         Weighted {
             weight: from_dungeon_level(
                 &[
-                    Transition { level: 2, value: 10, }
+                    Transition { level: 2, value: 10, },
+                    Transition { level: 12, value: 20, },
                 ],
                 level,
             ),
             item: Item::ConfusionScroll,
+        },
+        Weighted {
+            weight: from_dungeon_level(
+                &[
+                    Transition { level: 5, value: 10, },
+                ],
+                level,
+            ),
+            item: Item::HpUp,
+        },
+        Weighted {
+            weight: from_dungeon_level(
+                &[
+                    Transition { level: 7, value: 10, },
+                ],
+                level,
+            ),
+            item: Item::PowUp,
+        },
+        Weighted {
+            weight: from_dungeon_level(
+                &[
+                    Transition { level: 10, value: 10, },
+                ],
+                level,
+            ),
+            item: Item::DefUp,
         },
     ];
     let item_choice = WeightedChoice::new(item_chances);
@@ -330,6 +353,18 @@ fn place_items(
                 Item::ConfusionScroll => {
                     // Creates a confusion scroll
                     Object::confusion_scroll(x, y)
+                },
+                Item::HpUp => {
+                    // Creates a Health upgrade
+                    Object::health_up(x, y)
+                },
+                Item::PowUp => {
+                    // Creates a Power upgrade
+                    Object::power_up(x, y)
+                },
+                Item::DefUp => {
+                    // Creates a Defense upgrade
+                    Object::defense_up(x, y)
                 },
             };
             items.insert(*item_counter, item);

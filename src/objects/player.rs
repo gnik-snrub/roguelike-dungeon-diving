@@ -28,8 +28,8 @@ impl Object {
                     exp: 0,
                     max_hp: 100,
                     hp: 100,
-                    defense: 1,
-                    power: 4,
+                    defense: 10,
+                    power: 40,
                     on_death: DeathCallback::Player,
                 }),
                 ai: None,
@@ -211,6 +211,9 @@ impl Object {
                         Item::LightningBoltScroll => Object::use_lightning_bolt_scroll,
                         Item::ConfusionScroll => Object::use_confusion_scroll,
                         Item::FireballScroll => Object::use_fireball_scroll,
+                        Item::HpUp => Object::use_health_up,
+                        Item::PowUp => Object::use_power_up,
+                        Item::DefUp => Object::use_defense_up,
                     };
                     match on_use(inventory_id, tcod, game, &mut player.object, characters, items) {
                         UseResult::UsedUp => {

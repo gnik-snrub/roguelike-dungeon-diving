@@ -111,6 +111,7 @@ impl Object {
             }
         }
     }
+    
 
     fn _mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut T, &mut T) {
         assert!(first_index != second_index);
