@@ -92,10 +92,15 @@ pub fn make_map(
     // Fill map with wall tiles
     let mut map = vec![vec![Tile::wall(&colors); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
-    //Creates vector to store rooms
+    // Creates vector to store rooms
     let mut rooms: Vec<Rect> = vec![];
 
+    // Keeps track of total items spawned on a map.
     let mut item_counter = 1;
+
+    // Generates bool values to determine map gen. features.
+    let should_drunken_mine: bool = rand::random();
+    let should_butterfly: bool = rand::random();
 
     for _ in 0..MAX_ROOMS {
         // Random width and height
@@ -150,9 +155,15 @@ pub fn make_map(
                 // - Find the tile with the shortest distance
                 // - Run the same algorithm to connect tunnels between them
             }
-
+            if should_drunken_mine {
+                mine_drunkenly(new_room, &mut map, &colors);    
+            }
             rooms.push(new_room)
         }
+    }
+
+    if should_butterfly {
+        butterfly(&mut map, &colors);
     }
 
     // Create stairs at the center of the last room.

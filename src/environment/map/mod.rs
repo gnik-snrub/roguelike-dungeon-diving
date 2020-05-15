@@ -1,6 +1,6 @@
 pub mod tiles;
 
-use crate::environment::Map;
+use crate::environment::{ Map, MAP_WIDTH, MAP_HEIGHT };
 use crate::environment::tiles::Tile;
 use crate::objects::Object;
 
@@ -53,6 +53,109 @@ pub fn create_room(room: Rect, map: &mut Map, colors: &[Color; 7]) {
     }
 }
 
+// Creates some randomness along the outside of a rect.
+pub fn mine_drunkenly(room: Rect, map: &mut Map, colors: &[Color; 7]) {
+    let miner_max = rand::thread_rng().gen_range(1, 5);
+    let tiles_to_carve = rand::thread_rng().gen_range(20, 40);
+
+    let mut miners = miner_max;
+    while miners > 0 {
+
+        let (mut x, mut y) = room.center();
+        let mut tiles_carved = 0;
+
+        while tiles_carved < (tiles_to_carve / miner_max) {
+            if !map[x as usize][y as usize].empty {
+                map[x as usize][y as usize] = Tile::empty(colors);
+                tiles_carved += 1
+            } else {
+                let four_sided_dice = rand::thread_rng().gen_range(1, 5);
+                match four_sided_dice {
+                    1 => { y += 1;
+                        if y <= 1 || y >= MAP_HEIGHT - 1 { y -= 1; }
+                    },
+                    2 => { y -= 1;
+                        if y <= 1 || y >= MAP_HEIGHT - 1 { y += 1; }
+                    },
+                    3 => { x += 1;
+                        if x <= 1 || x >= MAP_WIDTH - 1 { x -= 1; }
+                    },
+                    _ => { x -= 1;
+                        if x <= 1 || x >= MAP_WIDTH - 1 { x += 1; }
+                    },
+                }
+            }
+        }
+        miners -= 1
+    }
+}
+
+// Creates a random mirrored pattern from the center of the map.
+pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
+    let (mut left_x, mut left_y, mut right_x, mut right_y) =
+        (MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH / 2, MAP_HEIGHT / 2);
+    let mut tiles_to_carve = 250;
+
+    let brush = 2;
+
+    map[left_x as usize][left_y as usize] = Tile::empty(colors);
+
+    while tiles_to_carve > 0 {
+
+        let four_sided_dice = rand::thread_rng().gen_range(1, 5);
+        match four_sided_dice {
+            1 => {
+                left_y -= 1;
+                if left_y <= 3 || left_y >= MAP_HEIGHT - 4 {
+                    left_y += 1;
+                } else {
+                    right_y -= 1;
+                    tiles_to_carve -= 1;
+                }
+            },
+            2 => {
+                left_y += 1;
+                if left_y <= 3 || left_y >= MAP_HEIGHT - 4 {
+                    left_y -= 1;
+                } else {
+                    right_y += 1;
+                    tiles_to_carve -= 1;
+                }
+            },
+            3 => {
+                left_x -= 1;
+                if left_x <= 3 || left_x >= MAP_WIDTH / 2 {
+                    left_x += 1;
+                } else {
+                    right_x += 1;
+                    tiles_to_carve -= 1;
+                }
+            },
+            _ => {
+                left_x += 1;
+                if left_x <= 3 || left_x >= MAP_WIDTH / 2 {
+                    left_x -= 1;
+                } else {
+                    right_x -= 1;
+                    tiles_to_carve -= 1;
+                }
+            }
+        }
+
+        for x in (left_x - brush)..(left_x + brush) {
+            for y in (left_y - brush)..(left_y + brush) {
+                map[x as usize][y as usize] = Tile::empty(colors);
+            }
+        }
+
+        for x in (right_x - brush)..(right_x + brush) {
+            for y in (right_y - brush)..(right_y + brush) {
+                map[x as usize][y as usize] = Tile::empty(colors);
+            }
+        }
+    }
+}
+
 pub fn create_h_tunnel(x1: i32, x2: i32, y: i32, map: &mut Map, colors: &[Color; 7]) {
     // Horizontal tunnel. 'min()' and 'max()' are used in case 'x1 > x2'
     for x in cmp::min(x1, x2)..(cmp::max(x1, x2) + 1) {
@@ -60,7 +163,7 @@ pub fn create_h_tunnel(x1: i32, x2: i32, y: i32, map: &mut Map, colors: &[Color;
         map[x as usize][y as usize] = Tile::empty(colors);
 
         // Generates secret passages around tunnel, if possible.
-        let rng = rand::thread_rng().gen_range(0, 100);
+/*        let rng = rand::thread_rng().gen_range(0, 100);
         if rng % 2 == 0 {
             if map[x as usize][(y + 2) as usize].block_sight == false
             && map[x as usize][(y + 3) as usize].block_sight == false {
@@ -71,7 +174,7 @@ pub fn create_h_tunnel(x1: i32, x2: i32, y: i32, map: &mut Map, colors: &[Color;
                 map[x as usize][(y - 1) as usize] = Tile::hidden_passage(colors);
             }
         }
-    }
+*/    }
 }
 
 pub fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map, colors: &[Color; 7]) {
@@ -79,18 +182,21 @@ pub fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map, colors: &[Color;
     for y in cmp::min(y1, y2)..(cmp::max(y1, y2) + 1) {
         map[x as usize][y as usize] = Tile::empty(colors);
 
-        let max_chance = rand::thread_rng().gen_range(0, 100);
+        // Creates secret passages, and
+/*        let max_chance = rand::thread_rng().gen_range(0, 100);
         if max_chance % 2 == 0 {
-            if map[(x + 2) as usize][y as usize].block_sight == false
+            if map[(x + 1) as usize][y as usize].block_sight == true
+            && map[(x + 2) as usize][y as usize].block_sight == false
             && map[(x + 3) as usize][y as usize].block_sight == false {
                 map[(x + 1) as usize][y as usize] = Tile::hidden_passage(colors);
             }
-            if map[(x - 2) as usize][y as usize].block_sight == false
+            if map[(x - 1) as usize][y as usize].block_sight == true
+            && map[(x - 2) as usize][y as usize].block_sight == false
             && map[(x - 3) as usize][y as usize].block_sight == false {
                 map[(x - 1) as usize][y as usize] = Tile::hidden_passage(colors);
             }
         }
-    }
+*/    }
 }
 
 pub fn create_stairs(x: i32, y: i32) -> Object {

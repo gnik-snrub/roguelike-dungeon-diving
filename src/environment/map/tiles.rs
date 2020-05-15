@@ -8,6 +8,7 @@ use serde::{ Serialize, Deserialize };
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Tile {
+    pub empty: bool,
     pub blocked: bool,
     pub explored: bool,
     pub block_sight: bool,
@@ -26,6 +27,7 @@ impl Tile {
         let color_dark = color_light - colors[DARKNESS_MODIFIER];
 
         Tile {
+            empty: true,
             blocked: false,
             explored: false,
             block_sight: false,
@@ -39,6 +41,7 @@ impl Tile {
         let color_dark = color_light - colors[DARKNESS_MODIFIER];
 
         Tile {
+            empty: false,
             blocked: true,
             explored: false,
             block_sight: true,
@@ -48,10 +51,14 @@ impl Tile {
     }
 
     pub fn hidden_passage(colors: &[Color; 7]) -> Tile {
-        let color_light = colors[LIGHT_WALL_COLOR];
+        let color_light = match rand::thread_rng().gen_range(1, 3) {
+            1 => colors[LIGHT_WALL_COLOR + V_ONE],
+            _ => colors[LIGHT_WALL_COLOR + V_TWO],
+        };
         let color_dark = color_light - colors[DARKNESS_MODIFIER];
 
         Tile {
+            empty: false,
             blocked: false,
             explored: false,
             block_sight: true,
