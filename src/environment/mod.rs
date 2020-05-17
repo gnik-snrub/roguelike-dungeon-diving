@@ -1,5 +1,11 @@
 pub mod map;
 use map::tiles::Tile;
+use map::{
+    rectangles::rectangles,
+    drunken_miners::drunken_miners,
+    open_rectangles::open_rectangles,
+    open_drunken_miners::open_drunken_miners,
+};
 use map::*;
 
 use crate::{ Tcod, initialise_fov };
@@ -77,15 +83,11 @@ pub fn next_level(
 }
 
 pub fn make_map(
-    player: &mut Object,
+    mut player: &mut Object,
     characters: &mut Vec<Character>,
     items: &mut HashMap<i32, Object>,
     level: u32,
 ) -> Map {
-    // Ensures that there are no existing entities in the character, or item collections.
-    characters.clear();
-    items.clear();
-
     // Generate dungeon floor colors alongside variation
     let colors = gen_colors();
 
@@ -95,75 +97,29 @@ pub fn make_map(
     // Creates vector to store rooms
     let mut rooms: Vec<Rect> = vec![];
 
+    // Randomly decides which type of map to use, and generates it.
+    let map_type = rand::thread_rng().gen_range(1, 5);
+    println!("{}", map_type);
+    match map_type {
+        1 => rectangles(&mut rooms, &mut map, &colors, &mut player),
+        2 => drunken_miners(&mut rooms, &mut map, &colors, &mut player),
+        3 => open_rectangles(&mut rooms, &mut map, &colors, &mut player),
+        _ => open_drunken_miners(&mut rooms, &mut map, &colors, &mut player),
+    }
+
+    // Connects rooms together with horizontal/vertical tunnels.
+    create_tunnels(&rooms, &mut map, &colors);
+
+    // Ensures that there are no existing entities in the character, or item collections.
+    characters.clear();
+    items.clear();
+
     // Keeps track of total items spawned on a map.
     let mut item_counter = 1;
 
-    // Generates bool values to determine map gen. features.
-    let should_drunken_mine: bool = rand::random();
-    let should_butterfly: bool = rand::random();
-
-    for _ in 0..MAX_ROOMS {
-        // Random width and height
-        let w = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
-        let h = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
-        // Random position without going outside the map boundaries
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH - w);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT - h);
-
-        let new_room = Rect::new(x, y, w, h);
-
-        // Run through the other rooms and see if they interact with this one`
-        let failed = rooms.iter().any(|other_room| new_room.intersects_with(other_room));
-
-        // Adds in rooms according to world path value
-        if !failed {
-            // Paints room onto map tiles
-            create_room(new_room, &mut map, &colors);
-            place_characters(new_room, &map, characters, level);
-            place_items(new_room, items, &map, characters, &mut item_counter, level);
-
-            // Center coordinates of the new room, will be used later
-            let (new_x, new_y) = new_room.center();
-
-            if rooms.is_empty() {
-
-                // This is the first room, where the player starts at
-                player.set_pos(new_x, new_y);
-
-            } else {
-
-                // All rooms after the first connect to the previous room with a tunnel
-                // Center coordinates of the previous room
-                let (prev_x, prev_y) = rooms[rooms.len() - 1].center();
-
-                // Arbitrarily decides to begin with either a vertical, or horizontal tunnel
-                if rand::random() {
-                    // Horizontal tunnel first
-                    create_h_tunnel(prev_x, new_x, prev_y, &mut map, &colors);
-                    create_v_tunnel(prev_y, new_y, new_x, &mut map, &colors);
-                } else {
-                    // Vertical tunnel first
-                    create_v_tunnel(prev_y, new_y, prev_x, &mut map, &colors);
-                    create_h_tunnel(prev_x, new_x, new_y, &mut map, &colors);
-                }
-
-                // --- TO-DO ---
-                // No-Dead end algorithm:
-                // - Check to see if there are at least 2 empty tiles connected to a tile
-                // - If there is not at least 2, scan the map
-                // - Check each tile for distance away from the tile lacking connections
-                // - Find the tile with the shortest distance
-                // - Run the same algorithm to connect tunnels between them
-            }
-            if should_drunken_mine {
-                mine_drunkenly(new_room, &mut map, &colors);    
-            }
-            rooms.push(new_room)
-        }
-    }
-
-    if should_butterfly {
-        butterfly(&mut map, &colors);
+    for room in &rooms {
+        place_characters(*room, &map, characters, level);
+        place_items(*room, items, &map, characters, &mut item_counter, level);
     }
 
     // Create stairs at the center of the last room.
@@ -177,6 +133,7 @@ pub fn make_map(
             break;
         }
     }
+
     items.insert(stairs_id, stairs); // Finally, inserts stairs into the items hashmap.
 
     map
