@@ -1,3 +1,9 @@
+pub mod enemy_list;
+pub mod traits;
+
+use traits::get_trait;
+use enemy_list::get_monster;
+
 use crate::objects::Character;
 use super::ai::*;
 use super::*;
@@ -39,46 +45,37 @@ impl Object {
             _ => {},
         }
     }
+}
 
-//    fn generate_monster() -> (Character, Character) {
+pub fn generate_monster(x: i32, y: i32, tier: i32, level: u32, mut level_up: u32) -> Character {
 
-//    }
+    println!("Tier: {}\nLevel: {}", tier, level_up);
 
-    pub fn fire_elemental(x: i32, y: i32, mut level_up: u32) -> Character {
-        let mut fire_elemental = Object::new_enemy(x, y, 'f', tcod::colors::LIGHT_AMBER, "Fire Elemental", true, " ashes");
-        let fighter = Fighter {
-            exp: 35,
-            max_hp: 20,
-            hp: 20,
-            defense: 0,
-            power: 4,
-            on_death: DeathCallback::Monster,
-        };
-        while level_up > 0 {
-            Object::monster_level_up(fighter);
-            level_up -= 1;
-        }
-        fire_elemental.object.fighter = Some(fighter);
-        fire_elemental
+    // Selects random base monster and trait.
+    let enemy_trait = get_trait(tier);
+    let mut monster = get_monster(x, y, level, tier);
+
+    // Changes base monster variables to reflect the trait.
+    monster.object.name = format!("{}{}", enemy_trait.name, monster.object.name);
+    monster.object.corpse_type.push_str(&enemy_trait.corpse_type);
+    monster.object.color = enemy_trait.color;
+
+    // Adjust combat capabilities of the monster to reflect the trait.
+    monster.object.fighter.as_mut().map(|f| {
+        f.exp += enemy_trait.exp;
+        f.max_hp += enemy_trait.hp;
+        f.hp += enemy_trait.hp;
+        f.defense += enemy_trait.defense;
+        f.power += enemy_trait.power;
+    });
+
+    monster.object.fighter.as_ref().map(|f| println!("{:?}", f));
+
+    // Level up the monster to increase the difficulty.
+    while level_up > 0 {
+        monster.object.fighter.as_mut().map(|f| Object::monster_level_up(*f));
+        level_up -= 1;
     }
 
-    pub fn crystal_lizard(x: i32, y: i32, mut level_up: u32) -> Character {
-        let mut crystal_lizard = Object::new_enemy(x, y, 'C', tcod::colors::LIGHT_SKY, "Crystal Lizard", true, " shards");
-        let fighter = Fighter {
-            exp: 100,
-            max_hp: 30,
-            hp: 30,
-            defense: 2,
-            power: 8,
-            on_death: DeathCallback::Monster,
-        };
-        while level_up > 2 {
-            if level_up % 2 == 0 {
-                Object::monster_level_up(fighter);
-            }
-            level_up -= 1;
-        }
-        crystal_lizard.object.fighter = Some(fighter);
-        crystal_lizard
-    }
+    monster
 }

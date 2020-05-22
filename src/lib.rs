@@ -40,7 +40,7 @@ const V_TWO: usize = 2;
 const DARKNESS_MODIFIER: usize = 6;
 
 const LEVEL_UP_BASE: i32 = 200;
-const LEVEL_UP_FACTOR: i32 = 150;
+const LEVEL_UP_FACTOR: i32 = 100;
 const LEVEL_SCREEN_WIDTH: i32 = 40;
 
 const CHARACTER_SCREEN_WIDTH: i32 = 30;

@@ -1,6 +1,7 @@
 use crate::environment::Map;
 use crate::environment::map::Rect;
 use crate::objects::{ Object, Character, items::Item };
+use crate::objects::npc::enemies::generate_monster;
 
 use std::collections::HashMap;
 
@@ -42,12 +43,12 @@ pub fn spawner(
     items.insert(stairs_id, stairs); // Finally, inserts stairs into the items hashmap.
 }
 
-struct Transition {
-    level: u32,
-    value: u32,
+pub struct Transition {
+    pub level: u32,
+    pub value: u32,
 }
 
-fn from_dungeon_level(table: &[Transition], level: u32) -> u32 {
+pub fn from_dungeon_level(table: &[Transition], level: u32) -> u32 {
     table.iter().rev()
         .find(|transition| level >= transition.level)
         .map_or(0, |transition| transition.value)
@@ -146,9 +147,9 @@ fn place_characters(room: Rect, map: &Map, characters: &mut Vec<Character>, leve
 
         if !Object::is_blocked(x, y, map, characters) {
             let mut monster = match monster_choice.ind_sample(&mut rand::thread_rng()) {
-                "weak_monster" => Object::fire_elemental(x, y, level_up),
-                "medium_monster" => Object::crystal_lizard(x, y, level_up),
-                "powerful_monster" => Object::crystal_lizard(x, y, level_up),
+                "weak_monster" => generate_monster(x, y, 1, level, level_up),
+                "medium_monster" => generate_monster(x, y, 2, level, level_up),
+                "powerful_monster" => generate_monster(x, y, 3, level, level_up),
                 _ => unreachable!(),
             };
             monster.object.alive = true;

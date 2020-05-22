@@ -155,10 +155,6 @@ Defense: {}",
             println!("{:?}", player.inventory.as_ref());
             DidntTakeTurn
         },
-        ( Key { code: Text, .. }, "c", true) => {
-//            Object::use_item(1, tcod, game, characters);
-            DidntTakeTurn
-        },
 
 //      This code is temporarily removed, as it breaks the laptop on which it is being written.
 //      Note: The fact that it breaks this specific laptop is proof that it functions correctly.
