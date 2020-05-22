@@ -1,15 +1,15 @@
-use crate::environment::map::{ butterfly, create_room };
+use crate::environment::map::create_room;
 use crate::environment::*;
 
 use rand::*;
 
-pub fn open_rectangles(
+pub fn labyrinth(
     rooms: &mut Vec<Rect>,
     mut map: &mut Map,
     colors: &[Color; 7],
     player: &mut Object
 ) {
-    for _ in 0..MAX_ROOMS {
+    for _ in 0..18 {
         // Random width and height
         let w = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
         let h = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
@@ -31,15 +31,11 @@ pub fn open_rectangles(
             let (new_x, new_y) = new_room.center();
 
             if rooms.is_empty() {
-
                 // This is the first room, where the player starts at
                 player.set_pos(new_x, new_y);
-
             }
 
             rooms.push(new_room)
         }
     }
-    // Opens up center of map.
-    butterfly(&mut map, &colors);
 }

@@ -9,6 +9,8 @@ use serde::{ Serialize, Deserialize };
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Tile {
     pub empty: bool,
+    pub wall: bool,
+    pub secret_path: bool,
     pub blocked: bool,
     pub explored: bool,
     pub block_sight: bool,
@@ -28,6 +30,8 @@ impl Tile {
 
         Tile {
             empty: true,
+            wall: false,
+            secret_path: false,
             blocked: false,
             explored: false,
             block_sight: false,
@@ -42,6 +46,8 @@ impl Tile {
 
         Tile {
             empty: false,
+            wall: true,
+            secret_path: false,
             blocked: true,
             explored: false,
             block_sight: true,
@@ -59,6 +65,8 @@ impl Tile {
 
         Tile {
             empty: false,
+            wall: false,
+            secret_path: true,
             blocked: false,
             explored: false,
             block_sight: true,

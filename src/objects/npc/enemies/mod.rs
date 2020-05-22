@@ -40,6 +40,10 @@ impl Object {
         }
     }
 
+//    fn generate_monster() -> (Character, Character) {
+
+//    }
+
     pub fn fire_elemental(x: i32, y: i32, mut level_up: u32) -> Character {
         let mut fire_elemental = Object::new_enemy(x, y, 'f', tcod::colors::LIGHT_AMBER, "Fire Elemental", true, " ashes");
         let fighter = Fighter {
