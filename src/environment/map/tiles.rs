@@ -57,9 +57,10 @@ impl Tile {
     }
 
     pub fn hidden_passage(colors: &[Color; 7]) -> Tile {
-        let color_light = match rand::thread_rng().gen_range(1, 3) {
+        let color_light = match rand::thread_rng().gen_range(1, 6) {
             1 => colors[LIGHT_WALL_COLOR + V_ONE],
-            _ => colors[LIGHT_WALL_COLOR + V_TWO],
+            2 => colors[LIGHT_WALL_COLOR + V_TWO],
+            _ => colors[LIGHT_WALL_COLOR]
         };
         let color_dark = color_light - colors[DARKNESS_MODIFIER];
 

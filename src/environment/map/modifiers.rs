@@ -31,16 +31,16 @@ pub fn mine_drunkenly(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
                     let four_sided_dice = rand::thread_rng().gen_range(1, 5);
                     match four_sided_dice {
                         1 => { y += 1;
-                            if y <= 1 || y >= MAP_HEIGHT - 1 { y -= 1; }
+                            if y >= MAP_HEIGHT - 1 { y -= 1; }
                         },
                         2 => { y -= 1;
-                            if y <= 1 || y >= MAP_HEIGHT - 1 { y += 1; }
+                            if y <= 1 { y += 1; }
                         },
                         3 => { x += 1;
-                            if x <= 1 || x >= MAP_WIDTH - 1 { x -= 1; }
+                            if x >= MAP_WIDTH - 1 { x -= 1; }
                         },
                         _ => { x -= 1;
-                            if x <= 1 || x >= MAP_WIDTH - 1 { x += 1; }
+                            if x <= 1 { x += 1; }
                         },
                     }
                 }
@@ -60,6 +60,7 @@ pub fn caved_in(map: &mut Map, colors: &[Color; 7]) {
         random_hole(map, &colors);
     }
 }
+
 // Creates a random mirrored pattern from the center of the map.
 pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
     // Creates two instances of the center point, and amount of tiles to be carved.
@@ -81,7 +82,7 @@ pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
         match four_sided_dice {
             1 => {
                 left_y -= 1;
-                if left_y <= (brush + 1) || left_y >= MAP_HEIGHT - (brush + 1) {
+                if left_y <= (brush + 1) {
                     left_y += 1;
                 } else {
                     right_y -= 1;
@@ -90,7 +91,7 @@ pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
             },
             2 => {
                 left_y += 1;
-                if left_y <= (brush + 1) || left_y >= MAP_HEIGHT - (brush + 1) {
+                if left_y >= MAP_HEIGHT - (brush + 1) {
                     left_y -= 1;
                 } else {
                     right_y += 1;
@@ -99,7 +100,7 @@ pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
             },
             3 => {
                 left_x -= 1;
-                if left_x <= (brush + 1) || left_x >= MAP_WIDTH / 2 {
+                if left_x <= (brush + 1) {
                     left_x += 1;
                 } else {
                     right_x += 1;
@@ -108,7 +109,7 @@ pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
             },
             _ => {
                 left_x += 1;
-                if left_x <= (brush + 1) || left_x >= MAP_WIDTH / 2 {
+                if left_x >= MAP_WIDTH / 2 {
                     left_x -= 1;
                 } else {
                     right_x -= 1;
@@ -132,6 +133,7 @@ pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
         }
     }
 }
+
 // Creates a random pattern from the center of the map.
 pub fn random_hole(map: &mut Map, colors: &[Color; 7]) {
     // Creates two instances of the center point, and amount of tiles to be carved.
@@ -153,7 +155,7 @@ pub fn random_hole(map: &mut Map, colors: &[Color; 7]) {
         match four_sided_dice {
             1 => {
                 y -= 1;
-                if y <= (brush + 1) || y >= MAP_HEIGHT - (brush + 1) {
+                if y <= (brush + 1) {
                     y = MAP_HEIGHT / 2;
                 } else {
                     tiles_to_carve -= 1;
@@ -161,7 +163,7 @@ pub fn random_hole(map: &mut Map, colors: &[Color; 7]) {
             },
             2 => {
                 y += 1;
-                if y <= (brush + 1) || y >= MAP_HEIGHT - (brush + 1) {
+                if y >= MAP_HEIGHT - (brush + 1) {
                     y = MAP_HEIGHT / 2;
                 } else {
                     tiles_to_carve -= 1;
@@ -169,7 +171,7 @@ pub fn random_hole(map: &mut Map, colors: &[Color; 7]) {
             },
             3 => {
                 x -= 1;
-                if x <= (brush + 1) || x >= MAP_WIDTH - (brush + 1) {
+                if x <= (brush + 1) {
                     x = MAP_WIDTH / 2;
                 } else {
                     tiles_to_carve -= 1;
@@ -177,7 +179,7 @@ pub fn random_hole(map: &mut Map, colors: &[Color; 7]) {
             },
             _ => {
                 x += 1;
-                if x <= (brush + 1) || x >= MAP_WIDTH - (brush + 1) {
+                if x >= MAP_WIDTH - (brush + 1) {
                     x = MAP_WIDTH / 2;
                 } else {
                     tiles_to_carve -= 1;
@@ -188,6 +190,76 @@ pub fn random_hole(map: &mut Map, colors: &[Color; 7]) {
         // Removes the tiles according to brush size based on the new position.
         for x in (x - brush)..(x + brush) {
             for y in (y - brush)..(y + brush) {
+                map[x as usize][y as usize] = Tile::empty(colors);
+            }
+        }
+    }
+}
+
+pub fn rubble(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
+    let final_room = &rooms[rooms.len() - 2];
+    for room in rooms {
+        let tiles = (room.x2 - room.x1) * (room.y2 - room.y1);
+        let possible_debris = tiles / 5;
+        let mut piles = 0;
+
+        while possible_debris > piles {
+            let x = rand::thread_rng().gen_range(room.x1 + 2, room.x2 - 1);
+            let y = rand::thread_rng().gen_range(room.y1 + 2, room.y2 - 1);
+
+            if rand::random() {
+                map[x as usize][y as usize] = Tile::wall(colors);
+            }
+
+            piles += 1;
+        }
+        if room == final_room {
+            break;
+        }
+    }
+}
+
+pub fn pillars(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
+    let stair_room = rooms.len() - 1;
+    let mut room_count = 0;
+    for room in rooms {
+        let tiles = ((room.x2-1) - (room.x1+1)) * ((room.y2-1) - (room.y1+1));
+        let possible_pillars = tiles / 5;
+
+        if possible_pillars < 16 && rand::random() {
+            map[(room.x1 + 2) as usize][(room.y1 + 2) as usize] = Tile::wall(colors);
+            map[(room.x2 - 2) as usize][(room.y1 + 2) as usize] = Tile::wall(colors);
+            map[(room.x1 + 2) as usize][(room.y2 - 2) as usize] = Tile::wall(colors);
+            map[(room.x2 - 2) as usize][(room.y2 - 2) as usize] = Tile::wall(colors);
+        }
+
+        room_count += 1;
+
+        if room_count == stair_room {
+            break;
+        }
+    }
+}
+
+pub fn purge_loners(map: &mut Map, colors: &[Color; 7], max_walls: u32) {
+    let mut purge_map = vec![vec![false; MAP_HEIGHT as usize]; MAP_WIDTH as usize];
+    for x in 1..MAP_WIDTH - 1 {
+        for y in 1..MAP_HEIGHT - 1 {
+            let mut wall_count = 0;
+
+            if map[(x - 1) as usize][y as usize].empty == false { wall_count += 1; }
+            if map[(x + 1) as usize][y as usize].empty == false { wall_count += 1; }
+            if map[x as usize][(y - 1) as usize].empty == false { wall_count += 1; }
+            if map[x as usize][(y + 1) as usize].empty == false { wall_count += 1; }
+
+            if wall_count == max_walls {
+                purge_map[x as usize][y as usize] = true;
+            }
+        }
+    }
+    for x in 1..MAP_WIDTH - 1 {
+        for y in 1..MAP_HEIGHT - 1 {
+            if purge_map[x as usize][y as usize] == true {
                 map[x as usize][y as usize] = Tile::empty(colors);
             }
         }

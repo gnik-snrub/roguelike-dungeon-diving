@@ -43,9 +43,9 @@ pub fn render_all(
             }
 
             // Show explored tiles only! (Any visible tile is explored already)
-            if *explored {
+//            if *explored {
                 tcod.con.set_char_background(x, y, color, BackgroundFlag::Set);
-            }
+//            }
         }
     }
 

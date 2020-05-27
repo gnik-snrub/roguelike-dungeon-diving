@@ -4,11 +4,12 @@ use map::*;
 
 use map::{ // List of map gen variants go here
     rectangles::rectangles,
+    drunk_walk::drunk_walk,
     modifiers::*,
 };
 
 pub mod spawner;
-use spawner::spawner;
+use spawner::{ rooms_spawner, no_rooms_spawner };
 
 use crate::{ Tcod, initialise_fov };
 use crate::graphics::gui::Messages;
@@ -99,45 +100,71 @@ pub fn make_map(
     let mut rooms = vec![];
 
     // Randomly decides which type of map to use, and generates it.
-    let map_type = rand::thread_rng().gen_range(1, 5);
+    let map_type = rand::thread_rng().gen_range(1, 6);
     //let map_type = 1;
-    println!("{}", map_type);
-    let needs_corridors = match map_type {
+    let (needs_corridors, has_rooms) = match map_type {
         // Standard rectangles map
         1 => {
             rectangles(&mut rooms, &mut map, &colors, &mut player);
-            true
+            (true, true)
         },
 
         // Rectangles map with an open area in the middle
         2 => {
             rectangles(&mut rooms, &mut map, &colors, &mut player);
             caved_in(&mut map, &colors);
-            true
+            (true, true)
         },
 
         // Rectangles map with the drunken miner modifier
         3 => {
             rectangles(&mut rooms, &mut map, &colors, &mut player);
             mine_drunkenly(&rooms, &mut map, &colors);
-            true
+            (true, true)
         },
 
         // Rectangles map with the open area and drunken miner modifiers
-        _ => {
+        4 => {
             rectangles(&mut rooms, &mut map, &colors, &mut player);
             mine_drunkenly(&rooms, &mut map, &colors);
             caved_in(&mut map, &colors);
-            true
+            (true, false)
         },
+
+        _ => {
+            drunk_walk(&mut map, &colors, &mut player);
+            (false, false)
+        }
     };
+
+    // Randomly adds in corner pillars, or debris, if map has rooms.
+    if has_rooms {
+        match rand::thread_rng().gen_range(1, 4) {
+            1 => pillars(&rooms, &mut map, &colors),
+            2 => rubble(&rooms, &mut map, &colors),
+            _ => {},
+        }
+        purge_loners(&mut map, &colors, 2); // Widens corridor entrances
+    } else {
+        match rand::thread_rng().gen_range(1, 2) {
+            _ => {
+                let max_walls = 0;
+                purge_loners(&mut map, &colors, max_walls);
+            },
+        }
+    }
+
+    // Place inaccessible area culling function here.
+
+    match has_rooms {
+        true => rooms_spawner(&rooms, &mut items, &map, &mut characters, level),
+        false => no_rooms_spawner(&mut items, &map, &mut characters, level),
+    }
 
     // Connects rooms together with horizontal/vertical tunnels.
     if needs_corridors {
         create_tunnels(&rooms, &mut map, &colors);
     }
-
-    spawner(&rooms, &mut items, &map, &mut characters, level);
 
     map
 }

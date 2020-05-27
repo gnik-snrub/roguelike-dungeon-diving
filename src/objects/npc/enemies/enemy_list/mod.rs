@@ -78,6 +78,7 @@ pub fn get_monster(x: i32, y: i32, level: u32, tier: i32) -> Character {
     let new_trait = match monster_choice.ind_sample(&mut rand::thread_rng()) {
         "weak_monster" => elemental(x, y, tier),
         "medium_monster" => lizard(x, y, tier),
+        "powerful_monster" => blob(x, y, tier),
         _ => unreachable!(),
     };
     new_trait
