@@ -5,6 +5,7 @@ use map::*;
 use map::{ // List of map gen variants go here
     rectangles::rectangles,
     drunk_walk::drunk_walk,
+    cellular_automata::cellular_automata,
     modifiers::*,
 };
 
@@ -15,6 +16,9 @@ use crate::{ Tcod, initialise_fov };
 use crate::graphics::gui::Messages;
 use crate::objects::{ Object, Character };
 use crate::graphics::gen_colors;
+
+//use crate::Point;
+//use crate::pathing::bfs::broad_first_search;
 
 use std::collections::HashMap;
 
@@ -49,8 +53,13 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(mut characters: &mut Vec<Character>, mut items: &mut HashMap<i32, Object>, player: &mut Object) -> Game {
-        let map = make_map(player, &mut characters, &mut items, 1);
+    pub fn new(
+        mut characters: &mut Vec<Character>,
+        mut items: &mut HashMap<i32, Object>,
+        player: &mut Object,
+        tcod: &mut Tcod
+    ) -> Game {
+        let map = make_map(player, &mut characters, &mut items, 1, tcod);
         Game {
             map: map,
             messages: Messages::new(),
@@ -64,7 +73,7 @@ pub fn next_level(
     game: &mut Game,
     player: &mut Object,
     characters: &mut Vec<Character>,
-    items: &mut HashMap<i32, Object>
+    items: &mut HashMap<i32, Object>,
 ) {
     game.messages.add(
         "You take a moment to rest, and recover your strength.",
@@ -80,8 +89,14 @@ pub fn next_level(
 
     // Keeps track of dungeon depth, makes new dungeon map, and generates FOV map.
     game.dungeon_level += 1;
-    game.map = make_map(player, characters, items, game.dungeon_level);
+    game.map = make_map(player, characters, items, game.dungeon_level, tcod);
     initialise_fov(tcod, &game.map);
+}
+
+enum MapType {
+    Rectangles,
+    DrunkenWalk,
+    CellularAutomata,
 }
 
 pub fn make_map(
@@ -89,6 +104,7 @@ pub fn make_map(
     mut characters: &mut Vec<Character>,
     mut items: &mut HashMap<i32, Object>,
     level: u32,
+    tcod: &mut Tcod,
 ) -> Map {
     // Generate dungeon floor colors alongside variation
     let colors = gen_colors();
@@ -97,73 +113,78 @@ pub fn make_map(
     let mut map = vec![vec![Tile::wall(&colors); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
     // Creates vector to store rooms
-    let mut rooms = vec![];
+    // Another vector to store important points in non-room-based map gen.
+    let mut rects = vec![];
+    let mut points = vec![];
+
+    let render = true;
 
     // Randomly decides which type of map to use, and generates it.
-    let map_type = rand::thread_rng().gen_range(1, 6);
-    //let map_type = 1;
-    let (needs_corridors, has_rooms) = match map_type {
+    let map_gen = rand::thread_rng().gen_range(1, 7);
+//    let map_gen = 6;
+    let map_type = match map_gen {
         // Standard rectangles map
         1 => {
-            rectangles(&mut rooms, &mut map, &colors, &mut player);
-            (true, true)
+            rectangles(&mut rects, &mut map, &colors, &mut player, tcod, render);
+            MapType::Rectangles
         },
 
         // Rectangles map with an open area in the middle
         2 => {
-            rectangles(&mut rooms, &mut map, &colors, &mut player);
-            caved_in(&mut map, &colors);
-            (true, true)
+            rectangles(&mut rects, &mut map, &colors, &mut player, tcod, render);
+            mine_drunkenly(&rects, &mut map, &colors, tcod, render);
+            MapType::Rectangles
         },
 
         // Rectangles map with the drunken miner modifier
         3 => {
-            rectangles(&mut rooms, &mut map, &colors, &mut player);
-            mine_drunkenly(&rooms, &mut map, &colors);
-            (true, true)
+            rectangles(&mut rects, &mut map, &colors, &mut player, tcod, render);
+            caved_in(&mut map, &colors, tcod, render);
+            MapType::Rectangles
         },
 
         // Rectangles map with the open area and drunken miner modifiers
         4 => {
-            rectangles(&mut rooms, &mut map, &colors, &mut player);
-            mine_drunkenly(&rooms, &mut map, &colors);
-            caved_in(&mut map, &colors);
-            (true, false)
+            rectangles(&mut rects, &mut map, &colors, &mut player, tcod, render);
+            mine_drunkenly(&rects, &mut map, &colors, tcod, render);
+            caved_in(&mut map, &colors, tcod, render);
+            MapType::Rectangles
         },
 
+        5 => {
+            drunk_walk(&mut points, &mut map, &colors, &mut player, tcod, render);
+            MapType::DrunkenWalk
+        }
+
         _ => {
-            drunk_walk(&mut map, &colors, &mut player);
-            (false, false)
+            cellular_automata(&mut points, &mut map, &colors, &mut player, tcod, render);
+            MapType::CellularAutomata
         }
     };
 
     // Randomly adds in corner pillars, or debris, if map has rooms.
-    if has_rooms {
-        match rand::thread_rng().gen_range(1, 4) {
-            1 => pillars(&rooms, &mut map, &colors),
-            2 => rubble(&rooms, &mut map, &colors),
-            _ => {},
-        }
-        purge_loners(&mut map, &colors, 2); // Widens corridor entrances
-    } else {
-        match rand::thread_rng().gen_range(1, 2) {
-            _ => {
-                let max_walls = 0;
-                purge_loners(&mut map, &colors, max_walls);
-            },
-        }
-    }
+    match map_type {
+        MapType::Rectangles => {
+            match rand::thread_rng().gen_range(1, 4) {
+                1 => pillars(&rects, &mut map, &colors, tcod, render),
+                2 => rubble(&rects, &mut map, &colors, tcod, render),
+                _ => {},
+            }
+            purge_loners(&mut map, &colors, 2); // Widens corridor entrances
 
-    // Place inaccessible area culling function here.
+            create_tunnels(&mut rects, &mut map, &colors, tcod, render);
+            rooms_spawner(&rects, &mut items, &map, &mut characters, level);
+        },
+        MapType::DrunkenWalk => {
+//            let max_walls = 0;
+//            purge_loners(&mut map, &colors, max_walls);
 
-    match has_rooms {
-        true => rooms_spawner(&rooms, &mut items, &map, &mut characters, level),
-        false => no_rooms_spawner(&mut items, &map, &mut characters, level),
-    }
-
-    // Connects rooms together with horizontal/vertical tunnels.
-    if needs_corridors {
-        create_tunnels(&rooms, &mut map, &colors);
+            joiner(&mut points, &mut map, &colors, tcod, render);
+            no_rooms_spawner(&mut items, &map, &mut characters, level);
+        },
+        MapType::CellularAutomata => {
+            no_rooms_spawner(&mut items, &map, &mut characters, level);
+        },
     }
 
     map

@@ -2,23 +2,44 @@ pub mod rectangles;
 pub mod modifiers;
 pub mod bsp;
 pub mod drunk_walk;
+pub mod cellular_automata;
 
 pub mod tiles;
 
-use crate::environment::Map;
+use crate::graphics::render_map;
+use crate::Tcod;
+use crate::environment::{ Map, MAP_WIDTH, MAP_HEIGHT };
 use crate::environment::tiles::Tile;
+
+use crate::Point;
+
+use std::collections::HashMap;
+use std::cmp::Ordering;
 
 use std::cmp;
 use tcod::colors::*;
+use rand::*;
 
 use serde::{ Serialize, Deserialize };
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Eq)]
 pub struct Rect {
     pub x1: i32,
     pub y1: i32,
     pub x2: i32,
     pub y2: i32,
+}
+
+impl Ord for Rect {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.center().cmp(&other.center())
+    }
+}
+
+impl PartialOrd for Rect {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Rect {
@@ -88,7 +109,11 @@ pub fn create_secret_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map, colors: &
     }
 }
 
-pub fn create_tunnels(rooms: &Vec<Rect>, mut map: &mut Map, colors: &[Color; 7]) {
+pub fn create_tunnels(rooms: &mut Vec<Rect>, mut map: &mut Map, colors: &[Color; 7], tcod: &mut Tcod, should_render: bool) {
+
+    if rand::random() {
+        room_sorter(rooms);
+    }
 
     let mut keep_connecting = true;
     let mut room_num = 0;
@@ -123,7 +148,72 @@ pub fn create_tunnels(rooms: &Vec<Rect>, mut map: &mut Map, colors: &[Color; 7])
                 create_secret_h_tunnel(x1, x2, y2, &mut map, &colors);
             }
 
+            if should_render {
+                render_map(tcod, map, 4);
+            }
+
             room_num += 1;
+        }
+    }
+}
+
+fn room_sorter<T: Ord>(rooms: &mut Vec<T>) {
+    for i in 1..rooms.len() {
+        for j in (1..i + 1).rev() {
+            if rooms[j - 1] <= rooms[j] { break; }
+            rooms.swap(j - 1, j);
+        }
+    }
+}
+
+pub fn joiner(points: &mut Vec<(i32, i32)>, mut map: &mut Map, colors: &[Color; 7], tcod: &mut Tcod, should_render: bool) {
+
+    room_sorter(points);
+
+    let mut keep_connecting = true;
+    let mut room_num = 0;
+    let total_rooms = points.len() - 1;
+
+    while keep_connecting {
+        if room_num + 1 > total_rooms {
+            keep_connecting = false;
+        } else {
+            let (x1, y1) = points[room_num];
+            let (x2, y2) = points[room_num + 1];
+
+            if rand::random() {
+                // Horizontal tunnel first
+                create_h_tunnel(x1, x2, y1, &mut map, &colors);
+                create_v_tunnel(y1, y2, x2, &mut map, &colors);
+
+            } else {
+                // Vertical tunnel first
+                create_v_tunnel(y1, y2, x1, &mut map, &colors);
+                create_h_tunnel(x1, x2, y2, &mut map, &colors);
+            }
+
+            if should_render {
+                render_map(tcod, map, 4);
+            }
+
+            room_num += 1;
+        }
+    }
+}
+
+pub fn cull_tiles(map: &mut Map, colors: &[Color; 7], points: &HashMap<Point, Point>) {
+    for x in 0..MAP_WIDTH {
+        for y in 0..MAP_HEIGHT {
+            match points.keys().find(|found| **found == (x as u32, y as u32)) {
+                Some((x, y)) => {
+                    map[*x as usize][*y as usize] = Tile::wall(colors);
+                },
+                None => {},
+            }
+
+//            if !map[x as usize][y as usize].found {
+//                map[x as usize][y as usize] = Tile::wall(colors);
+//            }
         }
     }
 }

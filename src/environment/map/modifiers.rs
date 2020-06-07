@@ -1,3 +1,5 @@
+use crate::graphics::render_map;
+use crate::Tcod;
 use crate::environment::{ Map, MAP_WIDTH, MAP_HEIGHT };
 use crate::environment::tiles::Tile;
 use crate::environment::map::Rect;
@@ -6,7 +8,7 @@ use tcod::colors::*;
 use rand::*;
 
 // Creates some randomness along the outside of a rect.
-pub fn mine_drunkenly(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
+pub fn mine_drunkenly(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7], tcod: &mut Tcod, should_render: bool) {
     for room in rooms {
         // Establishes mining variables
         // Miners must be separate from the miner_max, as the maximum will be used later, and
@@ -45,6 +47,11 @@ pub fn mine_drunkenly(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
                     }
                 }
             }
+
+            if should_render {
+                render_map(tcod, map, 4);
+            }
+
             // Once the miner has completed his workload, the next miner begins.
             miners -= 1
         }
@@ -52,17 +59,17 @@ pub fn mine_drunkenly(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
 }
 
 // Below are various forms of similar modifiers
-pub fn caved_in(map: &mut Map, colors: &[Color; 7]) {
+pub fn caved_in(map: &mut Map, colors: &[Color; 7], tcod: &mut Tcod, should_render: bool) {
     // Randomly decides what type of cave-in occurs.
     if rand::random() {
-        butterfly(map, &colors);
+        butterfly(map, &colors, tcod, should_render);
     } else {
-        random_hole(map, &colors);
+        random_hole(map, &colors, tcod, should_render);
     }
 }
 
 // Creates a random mirrored pattern from the center of the map.
-pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
+pub fn butterfly(map: &mut Map, colors: &[Color; 7], tcod: &mut Tcod, should_render: bool) {
     // Creates two instances of the center point, and amount of tiles to be carved.
     let (mut left_x, mut left_y, mut right_x, mut right_y) =
         (MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH / 2, MAP_HEIGHT / 2);
@@ -131,11 +138,15 @@ pub fn butterfly(map: &mut Map, colors: &[Color; 7]) {
                 map[x as usize][y as usize] = Tile::empty(colors);
             }
         }
+
+        if should_render {
+            render_map(tcod, map, 1);
+        }
     }
 }
 
 // Creates a random pattern from the center of the map.
-pub fn random_hole(map: &mut Map, colors: &[Color; 7]) {
+pub fn random_hole(map: &mut Map, colors: &[Color; 7], tcod: &mut Tcod, should_render: bool) {
     // Creates two instances of the center point, and amount of tiles to be carved.
     let mut x = MAP_WIDTH / 2;
     let mut y = MAP_HEIGHT / 2;
@@ -193,10 +204,14 @@ pub fn random_hole(map: &mut Map, colors: &[Color; 7]) {
                 map[x as usize][y as usize] = Tile::empty(colors);
             }
         }
+
+        if should_render {
+            render_map(tcod, map, 1);
+        }
     }
 }
 
-pub fn rubble(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
+pub fn rubble(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7], tcod: &mut Tcod, should_render: bool) {
     let final_room = &rooms[rooms.len() - 2];
     for room in rooms {
         let tiles = (room.x2 - room.x1) * (room.y2 - room.y1);
@@ -213,13 +228,18 @@ pub fn rubble(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
 
             piles += 1;
         }
+
+        if should_render {
+            render_map(tcod, map, 4);
+        }
+
         if room == final_room {
             break;
         }
     }
 }
 
-pub fn pillars(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
+pub fn pillars(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7], tcod: &mut Tcod, should_render: bool) {
     let stair_room = rooms.len() - 1;
     let mut room_count = 0;
     for room in rooms {
@@ -234,6 +254,10 @@ pub fn pillars(rooms: &Vec<Rect>, map: &mut Map, colors: &[Color; 7]) {
         }
 
         room_count += 1;
+        
+        if should_render {
+            render_map(tcod, map, 4);
+        }
 
         if room_count == stair_room {
             break;

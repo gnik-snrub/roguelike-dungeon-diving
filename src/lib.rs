@@ -2,6 +2,7 @@ pub mod objects;
 pub mod controls;
 pub mod environment;
 pub mod graphics;
+pub mod pathing;
 
 use objects::{ Object, Character };
 use environment::*;
@@ -13,7 +14,6 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::{ Read, Write };
-
 
 use tcod::console::*;
 use tcod::colors::*;
@@ -44,6 +44,8 @@ const LEVEL_UP_FACTOR: i32 = 100;
 const LEVEL_SCREEN_WIDTH: i32 = 40;
 
 const CHARACTER_SCREEN_WIDTH: i32 = 30;
+
+pub type Point = (u32, u32); // (x, y)
 
 pub struct Tcod {
     pub root: Root,
@@ -145,7 +147,7 @@ fn new_game(tcod: &mut Tcod) -> (Game, Vec<Character>, HashMap<i32, Object>, Cha
     let mut player = Object::new_player();
 
     // Generate map to be rendered
-    let mut game = Game::new(&mut characters, &mut items, &mut player.object);
+    let mut game = Game::new(&mut characters, &mut items, &mut player.object, tcod);
 
     initialise_fov(tcod, &game.map);
 

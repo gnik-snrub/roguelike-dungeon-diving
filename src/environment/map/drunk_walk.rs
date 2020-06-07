@@ -1,11 +1,16 @@
+use crate::graphics::render_map;
+use crate::Tcod;
 use crate::environment::*;
 
 use rand::*;
 
 pub fn drunk_walk(
+    start_points: &mut Vec<(i32, i32)>,
     map: &mut Map,
     colors: &[Color; 7],
-    player: &mut Object
+    player: &mut Object,
+    tcod: &mut Tcod,
+    should_render: bool,
 ) {
 
     // This is how many tiles will be removed per "carve"
@@ -15,6 +20,8 @@ pub fn drunk_walk(
     let mut y = rand::thread_rng().gen_range(1 + brush, MAP_HEIGHT - 1 - brush);
     let mut tiles_carved = 0;
     let aimed_carve_total = ((MAP_WIDTH - 2) * (MAP_WIDTH - 2)) / 2;
+
+    start_points.push((x, y));
 
     // First, it removes the center tile that it begins on.
     map[x as usize][y as usize] = Tile::empty(colors);
@@ -29,6 +36,11 @@ pub fn drunk_walk(
                     y -= 1;
                 } else {
                     y = rand::thread_rng().gen_range(1 + brush, MAP_HEIGHT - 1 - brush);
+                    start_points.push((x, y));
+
+                    if should_render {
+                        render_map(tcod, map, 5);
+                    }
                 }
             },
             2 => {
@@ -36,6 +48,11 @@ pub fn drunk_walk(
                     y += 1;
                 } else {
                     y = rand::thread_rng().gen_range(1 + brush, MAP_HEIGHT - 1 - brush);
+                    start_points.push((x, y));
+
+                    if should_render {
+                        render_map(tcod, map, 5);
+                    }
                 }
             },
             3 => {
@@ -43,6 +60,11 @@ pub fn drunk_walk(
                     x -= 1;
                 } else {
                     x = rand::thread_rng().gen_range(1 + brush, MAP_WIDTH - 1 - brush);
+                    start_points.push((x, y));
+
+                    if should_render {
+                        render_map(tcod, map, 5);
+                    }
                 }
             },
             _ => {
@@ -50,6 +72,11 @@ pub fn drunk_walk(
                     x += 1;
                 } else {
                     x = rand::thread_rng().gen_range(1 + brush, MAP_WIDTH - 1 - brush);
+                    start_points.push((x, y));
+
+                    if should_render {
+                        render_map(tcod, map, 5);
+                    }
                 }
             }
         }

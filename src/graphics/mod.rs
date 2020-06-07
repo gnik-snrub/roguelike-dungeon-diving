@@ -43,9 +43,9 @@ pub fn render_all(
             }
 
             // Show explored tiles only! (Any visible tile is explored already)
-//            if *explored {
+            if *explored {
                 tcod.con.set_char_background(x, y, color, BackgroundFlag::Set);
-//            }
+            }
         }
     }
 
@@ -136,4 +136,38 @@ pub fn gen_colors() -> [Color; 7] {
         dark_modifier,
         ];
     colors
+}
+
+pub fn render_map(
+    tcod: &mut Tcod,
+    map: &mut Map,
+    frames: u32,
+) {
+
+    for _ in 1..frames {
+
+        tcod.root.clear();
+
+        for y in 0..MAP_HEIGHT {
+            for x in 0..MAP_WIDTH {
+
+                let visible = tcod.fov.is_in_fov(x, y);
+                let wall = map[x as usize][y as usize].block_sight;
+                let color = match(visible, wall) {
+
+                    // Outside of field of view:
+                    (false, true) => map[x as usize][y as usize].color_dark,
+                    (false, false) => map[x as usize][y as usize].color_dark,
+
+                    // Inside the field of view:
+                    (true, true) => map[x as usize][y as usize].color_light,
+                    (true, false) => map[x as usize][y as usize].color_light,
+                };
+
+                tcod.root.set_char_background(x, y, color, BackgroundFlag::Set);
+            }
+        }
+
+        tcod.root.flush();
+    }
 }

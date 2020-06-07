@@ -1,3 +1,5 @@
+use crate::graphics::render_map;
+use crate::Tcod;
 use crate::environment::map::create_room;
 use crate::environment::*;
 
@@ -7,7 +9,9 @@ pub fn rectangles(
     rooms: &mut Vec<Rect>,
     mut map: &mut Map,
     colors: &[Color; 7],
-    player: &mut Object
+    player: &mut Object,
+    tcod: &mut Tcod,
+    should_render: bool,
 ) {
     for _ in 0..MAX_ROOMS {
         // Random width and height
@@ -36,6 +40,10 @@ pub fn rectangles(
             }
 
             rooms.push(new_room)
+        }
+
+        if should_render {
+            render_map(tcod, map, 4);
         }
     }
 }
