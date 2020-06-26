@@ -1,4 +1,4 @@
-use crate::environment::Map;
+use crate::environment::{ Map, MapTheme };
 use crate::environment::map::Rect;
 use crate::objects::{ Object, Character };
 use crate::objects::npc::enemies::{ generate_monster, monster_level_up };
@@ -7,20 +7,7 @@ use super::*;
 use rand::*;
 use rand::distributions::{ IndependentSample, Weighted, WeightedChoice };
 
-pub fn room_characters(room: Rect, map: &Map, characters: &mut Vec<Character>, level: u32) {
-    // Creates maximum number of monsters per room.
-    let max_monsters = from_dungeon_level(
-        &[
-            Transition { level: 1, value: 2 },
-            Transition { level: 4, value: 3 },
-            Transition { level: 6, value: 5 },
-        ],
-        level,
-    );
-
-    // Choose random number of monsters
-    let num_monsters = rand::thread_rng().gen_range(0, max_monsters + 1);
-
+fn monster_strength_weighting(level: u32) -> [Weighted<&'static str>; 3] {
     let weak_monster_chance = from_dungeon_level(
         &[
             Transition {
@@ -75,7 +62,7 @@ pub fn room_characters(room: Rect, map: &Map, characters: &mut Vec<Character>, l
         level,
     );
 
-    let monster_chances = &mut [
+    [
         Weighted {
             weight: weak_monster_chance,
             item: "weak_monster",
@@ -88,8 +75,25 @@ pub fn room_characters(room: Rect, map: &Map, characters: &mut Vec<Character>, l
             weight: powerful_monster_chance,
             item: "powerful_monster",
         },
-    ];
-    let monster_choice = WeightedChoice::new(monster_chances);
+    ]
+}
+
+pub fn room_characters(room: Rect, map: &Map, characters: &mut Vec<Character>, level: u32, theme: MapTheme) {
+    // Creates maximum number of monsters per room.
+    let max_monsters = from_dungeon_level(
+        &[
+            Transition { level: 1, value: 2 },
+            Transition { level: 4, value: 3 },
+            Transition { level: 6, value: 5 },
+        ],
+        level,
+    );
+
+    // Choose random number of monsters
+    let num_monsters = rand::thread_rng().gen_range(0, max_monsters + 1);
+
+    let mut monster_chances = monster_strength_weighting(level);
+    let monster_choice = WeightedChoice::new(&mut monster_chances);
 
     for _ in 0..num_monsters {
 
@@ -99,9 +103,9 @@ pub fn room_characters(room: Rect, map: &Map, characters: &mut Vec<Character>, l
 
         if !Object::is_blocked(x, y, map, characters) {
             let mut monster = match monster_choice.ind_sample(&mut rand::thread_rng()) {
-                "weak_monster" => generate_monster(x, y, 1, level),
-                "medium_monster" => generate_monster(x, y, 2, level),
-                "powerful_monster" => generate_monster(x, y, 3, level),
+                "weak_monster" => generate_monster(x, y, 1, level, theme),
+                "medium_monster" => generate_monster(x, y, 2, level, theme),
+                "powerful_monster" => generate_monster(x, y, 3, level, theme),
                 _ => unreachable!(),
             };
             monster.object.alive = true;
@@ -118,7 +122,7 @@ pub fn room_characters(room: Rect, map: &Map, characters: &mut Vec<Character>, l
     }
 }
 
-pub fn no_room_characters(map: &Map, characters: &mut Vec<Character>, level: u32) {
+pub fn no_room_characters(map: &Map, characters: &mut Vec<Character>, level: u32, theme: MapTheme) {
 
     // Creates maximum number of monsters per room.
     let max_monsters = from_dungeon_level(
@@ -130,75 +134,8 @@ pub fn no_room_characters(map: &Map, characters: &mut Vec<Character>, level: u32
         level,
     );
 
-    let weak_monster_chance = from_dungeon_level(
-        &[
-            Transition {
-                level: 1,
-                value: 80,
-            },
-            Transition {
-                level: 5,
-                value: 60,
-            },
-            Transition {
-                level: 7,
-                value: 45,
-            },
-        ],
-        level,
-    );
-
-    let medium_monster_chance = from_dungeon_level(
-        &[
-            Transition {
-                level: 3,
-                value: 15,
-            },
-            Transition {
-                level: 5,
-                value: 30,
-            },
-            Transition {
-                level: 7,
-                value: 60,
-            },
-        ],
-        level,
-    );
-
-    let powerful_monster_chance = from_dungeon_level(
-        &[
-            Transition {
-                level: 6,
-                value: 15,
-            },
-            Transition {
-                level: 9,
-                value: 30,
-            },
-            Transition {
-                level: 12,
-                value: 80,
-            },
-        ],
-        level,
-    );
-
-    let monster_chances = &mut [
-        Weighted {
-            weight: weak_monster_chance,
-            item: "weak_monster",
-        },
-        Weighted {
-            weight: medium_monster_chance,
-            item: "medium_monster",
-        },
-        Weighted {
-            weight: powerful_monster_chance,
-            item: "powerful_monster",
-        },
-    ];
-    let monster_choice = WeightedChoice::new(monster_chances);
+    let mut monster_chances = monster_strength_weighting(level);
+    let monster_choice = WeightedChoice::new(&mut monster_chances);
 
     let map_regions = 7;
     let mut map_region_start = 0;
@@ -221,9 +158,9 @@ pub fn no_room_characters(map: &Map, characters: &mut Vec<Character>, level: u32
 
             if !Object::is_blocked(x, y, map, characters) {
                 let mut monster = match monster_choice.ind_sample(&mut rand::thread_rng()) {
-                    "weak_monster" => generate_monster(x, y, 1, level),
-                    "medium_monster" => generate_monster(x, y, 2, level),
-                    "powerful_monster" => generate_monster(x, y, 3, level),
+                    "weak_monster" => generate_monster(x, y, 1, level, theme),
+                    "medium_monster" => generate_monster(x, y, 2, level, theme),
+                    "powerful_monster" => generate_monster(x, y, 3, level, theme),
                     _ => unreachable!(),
                 };
                 monster.object.alive = true;

@@ -26,6 +26,8 @@ pub enum DeathCallback {
     Monster,
 }
 
+// Connects to the specific callback function of the object
+// Calls the relevant death function for said object.
 impl DeathCallback {
     pub fn callback(self, object: &mut Object, game: &mut Game) {
         let callback: fn(&mut Object, &mut Game) = match self {
@@ -37,6 +39,8 @@ impl DeathCallback {
 }
 
 impl Object {
+    // Player death functions quite differently from other objects.
+    // However, the player is still an object, so a dummy-function is used to fill that gap.
     fn fake_player_death(_object: &mut Object, _game: &mut Game) {}
 
     fn monster_death(monster: &mut Object, game: &mut Game) {

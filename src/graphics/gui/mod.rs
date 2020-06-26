@@ -5,10 +5,13 @@ use crate::objects::*;
 
 use serde::{ Serialize, Deserialize };
 
+// Renders GUI elements
+// Render panel is a separate function, to allow for future possible GUI elements to be added.
 pub fn render_gui(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &HashMap<i32, Object>, player: &Object) {
     render_panel(tcod, game, characters, items, player);
 }
 
+// Renders the panel below the map.
 fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &HashMap<i32, Object>, player: &Object) {
     // Prepares the GUI panel.
     tcod.panel.set_default_background(BLACK);
@@ -16,12 +19,17 @@ fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &
 
     // Print the game messages, line by line.
     let mut y = MSG_HEIGHT as i32;
+    // Goes through the list of messages in order of newest to oldest.
     for &(ref msg, color) in game.messages.iter().rev() {
+        // Finds the height of each message.
         let msg_height = tcod.panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
+        // Subtracts that height from the total height of the panel in which the messages are rendered.
         y -= msg_height;
+        // If height reaches 0 or less, the loop ends.
         if y < 0 {
             break;
         }
+        // Otherwise, the message is printed to the panel, using the color attached to the message.
         tcod.panel.set_default_foreground(color);
         tcod.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
     }
@@ -72,12 +80,14 @@ fn render_panel(tcod: &mut Tcod, game: &Game, characters: &[Character], items: &
     );
 }
 
+// Struct definition for messages used in GUI.
 #[derive(Serialize, Deserialize)]
 pub struct Messages {
     messages: Vec<(String, Color)>,
 }
 
 impl Messages {
+    // Messages constructor.
     pub fn new() -> Messages {
         Messages { messages: vec![] }
     }
@@ -93,7 +103,14 @@ impl Messages {
     }
 }
 
-fn get_names_under_mouse(mouse: Mouse, player: &Object, characters: &[Character], items: &HashMap<i32, Object>, fov_map: &FovMap) -> String {
+fn get_names_under_mouse(
+    mouse: Mouse,
+    player: &Object,
+    characters: &[Character],
+    items: &HashMap<i32, Object>,
+    fov_map: &FovMap
+) -> String {
+    // Collects xy location of mouse pointer, and an empty variable to store possible names.
     let (x, y) = (mouse.cx as i32, mouse.cy as i32);
     let mut names = Vec::new();
 
@@ -104,6 +121,7 @@ fn get_names_under_mouse(mouse: Mouse, player: &Object, characters: &[Character]
         .map(|cha| cha.object.name.clone())
         .collect::<Vec<_>>();
 
+    // If player is at those coordinates, it is added to the list first.
     if player.pos() == (x, y) {
         names.push(player.name.clone());
     }
@@ -180,8 +198,11 @@ pub fn target_tile(
             Some(Event::Key(k)) => tcod.key = k,
             None => tcod.key = Default::default(),
         }
+
+        // Continues rendering the map, and things within it.
         render_all(tcod, game, characters, items, false, player);
 
+        // Assigns xy variables based on mouse xy location.
         let (x, y) = (tcod.mouse.cx as i32, tcod.mouse.cy as i32);
 
         // Accepts target if the click was in FOV and in range, if range was specified.

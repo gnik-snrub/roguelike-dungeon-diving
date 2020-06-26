@@ -13,6 +13,7 @@ pub fn rectangles(
     tcod: &mut Tcod,
     should_render: bool,
 ) {
+    // MAX ROOMS is just the maximum possible rooms. It doesn't guarantee that amount.
     for _ in 0..MAX_ROOMS {
         // Random width and height
         let w = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
@@ -42,6 +43,7 @@ pub fn rectangles(
             rooms.push(new_room)
         }
 
+        // Possibly renders map after each room is placed.
         if should_render {
             render_map(tcod, map, 4);
         }

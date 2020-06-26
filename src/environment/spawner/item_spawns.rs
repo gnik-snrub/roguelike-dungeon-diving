@@ -8,25 +8,8 @@ use std::collections::HashMap;
 use rand::*;
 use rand::distributions::{ IndependentSample, Weighted, WeightedChoice };
 
-pub fn room_items(
-    room: Rect,
-    items: &mut HashMap<i32, Object>,
-    map: &Map,
-    characters: &mut Vec<Character>,
-    item_counter: &mut i32,
-    level: u32
-) {
-    // Decides maximum number of items per room.
-    let max_items = from_dungeon_level(
-        &[
-            Transition { level: 1, value: 1 },
-            Transition { level: 4, value: 2 },
-        ],
-        level,
-    );
-
-    let item_chances = &mut [
-        // Healing potion will always show up, regardless of other item chances.
+fn item_weighting(level: u32) -> [Weighted<Item>; 8] {
+    [
         Weighted {
             weight: 35,
             item: Item::Heal,
@@ -64,6 +47,16 @@ pub fn room_items(
         Weighted {
             weight: from_dungeon_level(
                 &[
+                    Transition { level: 4, value: 10, },
+                    Transition { level: 16, value: 20, },
+                ],
+                level,
+            ),
+            item: Item::FearScroll,
+        },
+        Weighted {
+            weight: from_dungeon_level(
+                &[
                     Transition { level: 5, value: 10, },
                 ],
                 level,
@@ -88,8 +81,28 @@ pub fn room_items(
             ),
             item: Item::DefUp,
         },
-    ];
-    let item_choice = WeightedChoice::new(item_chances);
+    ]
+}
+
+pub fn room_items(
+    room: Rect,
+    items: &mut HashMap<i32, Object>,
+    map: &Map,
+    characters: &mut Vec<Character>,
+    item_counter: &mut i32,
+    level: u32
+) {
+    // Decides maximum number of items per room.
+    let max_items = from_dungeon_level(
+        &[
+            Transition { level: 1, value: 1 },
+            Transition { level: 4, value: 2 },
+        ],
+        level,
+    );
+
+    let mut item_chances = item_weighting(level);
+    let item_choice = WeightedChoice::new(&mut item_chances);
 
     // Choose random number of items.
     let num_items = rand::thread_rng().gen_range(0, max_items + 1);
@@ -116,6 +129,10 @@ pub fn room_items(
                 Item::ConfusionScroll => {
                     // Creates a confusion scroll
                     Object::confusion_scroll(x, y)
+                },
+                Item::FearScroll => {
+                    // Creates a confusion scroll
+                    Object::fear_scroll(x, y)
                 },
                 Item::HpUp => {
                     // Creates a Health upgrade
@@ -155,84 +172,19 @@ pub fn no_room_items(
     // Choose random number of items.
     let num_items = rand::thread_rng().gen_range(0, max_items + 1);
 
-    let item_chances = &mut [
-        // Healing potion will always show up, regardless of other item chances.
-        Weighted {
-            weight: 35,
-            item: Item::Heal,
-        },
-        Weighted {
-            weight: from_dungeon_level(
-                &[
-                    Transition { level: 4, value: 25, }
-                ],
-                level,
-            ),
-            item: Item::LightningBoltScroll,
-        },
-        Weighted {
-            weight: from_dungeon_level(
-                &[
-                    Transition { level: 6, value: 25, },
-                    Transition { level: 8, value: 50, },
-                    Transition { level: 10, value: 10, },
-                ],
-                level,
-            ),
-            item: Item::FireballScroll,
-        },
-        Weighted {
-            weight: from_dungeon_level(
-                &[
-                    Transition { level: 2, value: 10, },
-                    Transition { level: 12, value: 20, },
-                ],
-                level,
-            ),
-            item: Item::ConfusionScroll,
-        },
-        Weighted {
-            weight: from_dungeon_level(
-                &[
-                    Transition { level: 5, value: 10, },
-                ],
-                level,
-            ),
-            item: Item::HpUp,
-        },
-        Weighted {
-            weight: from_dungeon_level(
-                &[
-                    Transition { level: 7, value: 10, },
-                ],
-                level,
-            ),
-            item: Item::PowUp,
-        },
-        Weighted {
-            weight: from_dungeon_level(
-                &[
-                    Transition { level: 10, value: 10, },
-                ],
-                level,
-            ),
-            item: Item::DefUp,
-        },
-    ];
-    let item_choice = WeightedChoice::new(item_chances);
+    let mut item_chances = item_weighting(level);
+    let item_choice = WeightedChoice::new(&mut item_chances);
 
     let map_regions = 7;
     let mut map_region_start = 0;
 
-//    println!("Pre-spawn item loop");
-
     for _ in 1..map_regions {
-//        println!("Outer item loop");
+
         let mut region_items = 0;
         let mut attempts = 0;
         let max_tries = 25;
         while region_items <= num_items {
-//            println!("Inner item loop");
+
             // Select random spot for the item.
             let x = rand::thread_rng().gen_range(map_region_start, map_region_start + 10);
             let y = rand::thread_rng().gen_range(1, MAP_HEIGHT - 1);
@@ -254,6 +206,10 @@ pub fn no_room_items(
                         Object::fireball_scroll(x, y)
                     },
                     Item::ConfusionScroll => {
+                        // Creates a confusion scroll
+                        Object::confusion_scroll(x, y)
+                    },
+                    Item::FearScroll => {
                         // Creates a confusion scroll
                         Object::confusion_scroll(x, y)
                     },

@@ -13,6 +13,7 @@ use rand::Rng;
 use tcod::colors::*;
 
 impl Object {
+    // Player constructor
     pub fn new_player() -> Character {
         Character {
             object: Object {
@@ -40,6 +41,7 @@ impl Object {
             inventory: Some(Vec::new()),
         }
     }
+
     // Decides if the player object should move, or attack when inputs are entered.
     pub fn player_move_or_attack(dx: i32, dy: i32, game: &mut Game, characters: &mut [Character], player: &mut Object) {
         // The coordinates the player is moving to / attacking
@@ -62,10 +64,12 @@ impl Object {
                         ),
                         player.color,
                     );
+                    // Applies exp to player, if needed.
                     if let Some(exp) = characters[target_id].object.take_damage(damage, game) {
                         player.fighter.as_mut().unwrap().exp += exp;
                     }
                 } else {
+                    // Attack was not powerful enough to do damage.
                     game.messages.add(
                         format!(
                             "{} attacks {} but it has no effect!",
@@ -75,6 +79,7 @@ impl Object {
                     );
                 }
             },
+            // Moves player
             None => {
                 if !Object::is_blocked(x, y, &game.map, characters) {
                     player.set_pos(x, y);
@@ -150,6 +155,7 @@ impl Object {
                     &mut tcod.root,
                 );
             }
+            // Applies the level up bonus.
             fighter.exp -= level_up_xp;
             match choice.unwrap() {
                 0 => {
@@ -170,24 +176,28 @@ impl Object {
     // Adds item to player's inventory, and removes from the map.
     pub fn pick_item_up(object_id: i32, game: &mut Game, items: &mut HashMap<i32, Object>, player: &mut Character) {
         match &mut player.inventory {
-            Some(inventory) => if inventory.len() >= 26 {
+            // Inventory is found on player
+            Some(inventory) => if inventory.len() >= 26 { // Inventory is at capacity, nothing happens.
                 game.messages.add(
                     format!("Your inventory is full!"),
                     RED,
                 );
             } else {
+                // Inventory has space. Item is pulled from floor.
                 let wrapped = items.remove(&object_id);
                 match wrapped {
+                    // If item is pulled successfully, it is inserted into the players inventory
                     Some(pick_up_item) => {
                         game.messages.add(
-                            format!("You picked found a {}", pick_up_item.name),
+                            format!("You picked found a {}", pick_up_item.name), // Message is displayed as such.
                             pick_up_item.color,
                         );
                         inventory.push(pick_up_item);
                     },
-                    _ => (),
+                    _ => (), // Otherwise, nothing happens.
                 }
             }
+            // If player inventory isn't found, a message is displayed indicating this.
             None => game.messages.add(
                 format!("You don't have access to your inventory"),
                 RED,
@@ -204,28 +214,36 @@ impl Object {
         items: &mut HashMap<i32, Object>
     ) {
         match &mut player.inventory {
+            // Inventory is found on player.
             Some(inventory) => {
+                // Finds item within the inventory
                 if let Some(item) = inventory[inventory_id].item {
+                    // Depending on the type of item, a variable is assigned a function.
                     let on_use = match item {
                         Item::Heal => Object::use_health_potion,
                         Item::LightningBoltScroll => Object::use_lightning_bolt_scroll,
                         Item::ConfusionScroll => Object::use_confusion_scroll,
                         Item::FireballScroll => Object::use_fireball_scroll,
+                        Item::FearScroll => Object::use_fear_scroll,
                         Item::HpUp => Object::use_health_up,
                         Item::PowUp => Object::use_power_up,
                         Item::DefUp => Object::use_defense_up,
                     };
+                    // Triggers the relevant item usage function, and decides what to do depending on how the item works.
                     match on_use(inventory_id, tcod, game, &mut player.object, characters, items) {
+                        // If the item is used successfully, and is to be erased afterwards.
                         UseResult::UsedUp => {
                             // Destroy after use, unless it was cancelled for some reason.
                             inventory.remove(inventory_id);
                         },
+                        // Item fails to be used.
                         UseResult::Cancelled => {
                             game.messages.add("Cancelled", WHITE);
                         }
                     }
                 }
             },
+            // If the object selected is not something which can be used as an item.
             _ => game.messages.add("The item cannot be used.", WHITE),
         }
     }
@@ -269,7 +287,7 @@ impl Object {
     // Find closest enemy, up to a max range, within the player FOV.
     pub fn closest_monster(player: &Object, tcod: &Tcod, objects: &[Character], max_range: i32) -> Option<usize> {
         let mut closest_enemy = None;
-        let mut closest_dist = (max_range + 1) as f32; // Start with clightly more than max range.
+        let mut closest_dist = (max_range + 1) as f32; // Start with slightly more than max range.
 
         for (id, character) in objects.iter().enumerate() {
             let obj_ref = &character.object;

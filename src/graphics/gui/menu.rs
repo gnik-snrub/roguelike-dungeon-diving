@@ -14,7 +14,7 @@ pub fn menu<T: AsRef<str>>(
 
     // Calculates the height of the header, and one line per option.
     let header_height = if header.is_empty() {
-        0
+        0 // If there is no header, there is no height.
     } else {
         root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header)
     };
@@ -37,8 +37,11 @@ pub fn menu<T: AsRef<str>>(
 
     // Print menu options.
     for (index, option_text) in options.iter().enumerate() {
+        // Establishes text to print option line, including the selection option.
         let menu_letter = (b'a' + index as u8) as char;
         let text = format!("({}) {}", menu_letter, option_text.as_ref());
+
+        // Prints it to the window.
         window.print_ex(
             0,
             header_height + index as i32,
@@ -71,6 +74,7 @@ pub fn menu<T: AsRef<str>>(
 }
 
 pub fn inventory_menu(player: &Character, header: &str, root: &mut Root) -> Option<usize> {
+    // Collects inventory items, using an empty vec, in case the inventory is inaccessible for some reason.
     let empty_vec = Vec::new();
     let inventory = match &player.inventory {
         Some(items) => items,
@@ -84,6 +88,7 @@ pub fn inventory_menu(player: &Character, header: &str, root: &mut Root) -> Opti
             inventory.iter().map(|item| item.name.clone()).collect()
     };
 
+    // Creates a menu, and collects the choice made by the player.
     let inventory_index = menu(header, &options, INVENTORY_WIDTH, root);
 
     // If an item was chosen, return it.
@@ -94,6 +99,8 @@ pub fn inventory_menu(player: &Character, header: &str, root: &mut Root) -> Opti
     }
 }
 
+// Uses the menu function to display a simple message box.
+// Message displayed is the "text" variable msgbox takes.
 pub fn msgbox(text: &str, width: i32, root: &mut Root) {
     let options: &[&str] = &[];
     menu(text, options, width, root);

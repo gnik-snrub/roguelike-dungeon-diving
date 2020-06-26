@@ -22,7 +22,7 @@ use tcod::input::{ self, Event, Key, Mouse };
 
 const LIMIT_FPS: i32 = 60; // 20 frames-per-second maximum
 
-const SCREEN_WIDTH: i32 = 80;
+const SCREEN_WIDTH: i32 = 81;
 const SCREEN_HEIGHT: i32 = 50;
 
 const BAR_WIDTH: i32 = 20;
@@ -47,6 +47,7 @@ const CHARACTER_SCREEN_WIDTH: i32 = 30;
 
 pub type Point = (u32, u32); // (x, y)
 
+// Struct to contain the game.
 pub struct Tcod {
     pub root: Root,
     pub con: Offscreen,
@@ -56,6 +57,7 @@ pub struct Tcod {
     pub mouse: Mouse,
 }
 
+// Constructor for the Tcod struct
 impl Tcod {
     pub fn new() -> Tcod {
         let root = Root::initializer()
@@ -91,20 +93,14 @@ fn main_menu(mut tcod: &mut Tcod) {
         // Show the background image, at twice the regular console resolution.
         tcod::image::blit_2x(&img, (0, 0), (-1, -1), &mut tcod.root, (0, 0));
 
+        // Displays game title.
         tcod.root.set_default_foreground(LIGHT_YELLOW);
         tcod.root.print_ex(
             SCREEN_WIDTH / 2,
             SCREEN_HEIGHT / 2 - 4,
             BackgroundFlag::None,
             TextAlignment::Center,
-            "TOMBS OF THE ANCIENT KINGS",
-        );
-        tcod.root.print_ex(
-            SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT - 2,
-            BackgroundFlag::None,
-            TextAlignment::Center,
-            "BOTTOM TEXT",
+            "TECHNICALLY A VIDEO GAME",
         );
 
         // Show options, and wait for the player's choice.
@@ -149,6 +145,7 @@ fn new_game(tcod: &mut Tcod) -> (Game, Vec<Character>, HashMap<i32, Object>, Cha
     // Generate map to be rendered
     let mut game = Game::new(&mut characters, &mut items, &mut player.object, tcod);
 
+    // Starts the FOV based on the new map.
     initialise_fov(tcod, &game.map);
 
     // Intro message
@@ -182,17 +179,34 @@ fn save_game(
     items: &mut HashMap<i32, Object>,
     player: &mut Character,
 ) -> Result<(), Box<dyn Error>> {
+
+    // Converts game data to JSON.
     let save_data = serde_json::to_string(&(game, characters, items, player))?;
+
+    // Creates, or overwrites, a file called "savegame".
     let mut file = File::create("savegame")?;
+
+    // Writes the JSON data to the "savegame" file.
     file.write_all(save_data.as_bytes())?;
+
+    // Returns an Ok() to ensure that no errors took place in this function.
     Ok(())
 }
 
 fn load_game() -> Result<(Game, Vec<Character>, HashMap<i32, Object>, Character), Box<dyn Error>> {
+    // Creates an empty string.
     let mut json_save_state = String::new();
+
+    // Loads "savegame" file into the system.
     let mut file = File::open("savegame")?;
+
+    // Pours the data of the savegame file into the empty string
     file.read_to_string(&mut json_save_state)?;
+
+    // Loads the data imported to string to the different game elements.
     let result = serde_json::from_str::<(Game, Vec<Character>, HashMap<i32, Object>, Character)>(&json_save_state)?;
+
+    // Returns those elements in an Ok() to be unpacked into the game.
     Ok(result)
 }
 
@@ -206,7 +220,9 @@ fn play_game(
     // Force FOV "recompute" first time through the game loop
     let mut previous_player_position = (-1, -1);
 
+    // Keeps the core game loop happening so long as the window remains open.
     while !tcod.root.window_closed() {
+        // Clears the screen of the previous frame
         tcod.con.clear();
 
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
@@ -219,6 +235,7 @@ fn play_game(
         let fov_recompute = previous_player_position != (player.object.pos());
         render_all(&mut tcod, &mut game, &characters[..], &items, fov_recompute, &mut player.object);
 
+        // Moves everything to render onto the main console.
         tcod.root.flush();
 
         // Level up if needed.
@@ -236,7 +253,7 @@ fn play_game(
         if player.object.alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 0..characters.len() {
                 if characters[id].object.ai.is_some() {
-                    Object::ai_take_turn(id, &tcod, &mut game, &mut characters[..], &mut player.object);
+                    Object::ai_take_turn(id, &tcod, &mut game, &mut characters, &mut player.object);
                 }
             }
         }

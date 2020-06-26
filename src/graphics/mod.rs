@@ -20,43 +20,48 @@ pub fn render_all(
         tcod.fov.compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
+    // Scans the map
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
 
+            // Checks to see if each tile is in the player's FOV.
             let visible = tcod.fov.is_in_fov(x, y);
-            let wall = game.map[x as usize][y as usize].block_sight;
-            let color = match(visible, wall) {
 
+            // Color of the tile at present moment is determined.
+            let color = match visible {
                 // Outside of field of view:
-                (false, true) => game.map[x as usize][y as usize].color_dark,
-                (false, false) => game.map[x as usize][y as usize].color_dark,
+                false => game.map[x as usize][y as usize].color_dark,
 
                 // Inside the field of view:
-                (true, true) => game.map[x as usize][y as usize].color_light,
-                (true, false) => game.map[x as usize][y as usize].color_light,
+                true => game.map[x as usize][y as usize].color_light,
             };
 
+            // If tile is currently in FOV, set the tiles "explored" variable to true.
             let explored = &mut game.map[x as usize][y as usize].explored;
             if visible {
                 //Since it's visible, explore it
                 *explored = true;
             }
 
-            // Show explored tiles only! (Any visible tile is explored already)
-            if *explored {
+            // If a tiles "explored" variable is true, it will become visible.
+//            if *explored {
                 tcod.con.set_char_background(x, y, color, BackgroundFlag::Set);
-            }
+//            }
         }
     }
 
+    // Calls functions to render objects, and the GUI.
     draw_objects(tcod, game, items, characters, player);
     render_gui(tcod, game, characters, items, player);
 }
 
 fn draw_objects(tcod: &mut Tcod, game: &mut Game, items: &HashMap<i32, Object>, characters: &[Character], player: &Object) {
 
+    // Draws items, then draws characters.
+    // Characters are second, so that they have visibility priority over items.
     draw_items(tcod, game, items);
     draw_chars(tcod, game, characters);
+
     // Finally, it renders the player.
     player.draw(&mut tcod.con);
 
@@ -73,7 +78,10 @@ fn draw_objects(tcod: &mut Tcod, game: &mut Game, items: &HashMap<i32, Object>, 
 }
 
 fn draw_items(tcod: &mut Tcod, game: &mut Game, items: &HashMap<i32, Object>) {
+    // Searches through items hashmap.
     for item in items.values() {
+        // If item is in FOV, or "always_visible" variable is true in the location of an explored tile.
+        // Draw the item.
         if tcod.fov.is_in_fov(item.x, item.y) ||
             item.always_visible && game.map[item.x as usize][item.y as usize].explored {
             item.draw(&mut tcod.con);
@@ -100,32 +108,41 @@ fn draw_chars(tcod: &mut Tcod, game: &mut Game, characters: &[Character]) {
 }
 
 pub fn gen_colors() -> [Color; 7] {
+    // Light wall color is established.
     let light_wall_color: Color = Color {
-        r: ((rand::thread_rng().gen_range(50, 100))),
-        g: ((rand::thread_rng().gen_range(50, 100))),
-        b: ((rand::thread_rng().gen_range(50, 100)))
+        r: ((rand::thread_rng().gen_range(80, 130))),
+        g: ((rand::thread_rng().gen_range(80, 130))),
+        b: ((rand::thread_rng().gen_range(80, 130)))
     };
+
+    // Light ground color is established.
     let light_ground_color: Color = Color {
-        r: ((rand::thread_rng().gen_range(50, 150))),
-        g: ((rand::thread_rng().gen_range(75, 175))),
-        b: ((rand::thread_rng().gen_range(50, 200)))
+        r: ((rand::thread_rng().gen_range(65, 175))),
+        g: ((rand::thread_rng().gen_range(65, 175))),
+        b: ((rand::thread_rng().gen_range(65, 175)))
     };
+
+    // Variant is established, which just functions as a modifier to provide variation.
     let variant: Color = Color  {
-        r: ((rand::thread_rng().gen_range(5, 20))),
-        g: ((rand::thread_rng().gen_range(5, 20))),
-        b: ((rand::thread_rng().gen_range(5, 20)))
+        r: ((rand::thread_rng().gen_range(0, 30))),
+        g: ((rand::thread_rng().gen_range(0, 30))),
+        b: ((rand::thread_rng().gen_range(0, 30)))
     };
+
+    // Creates higher, and lower variants based on the above colors.
     let light_wall_variant_one: Color = light_wall_color - variant;
     let light_wall_variant_two: Color = light_wall_color + variant;
     let light_ground_variant_one: Color = light_ground_color - variant;
     let light_ground_variant_two: Color = light_ground_color + variant;
 
+    // A darkness modifier is created, which gets subtracted from the base tile color whenever it is in darkness.
     let dark_modifier: Color = Color {
-        r: ((rand::thread_rng().gen_range(20, 50))),
-        g: ((rand::thread_rng().gen_range(25, 55))),
-        b: ((rand::thread_rng().gen_range(5, 35))),
+        r: ((rand::thread_rng().gen_range(25, 35))),
+        g: ((rand::thread_rng().gen_range(25, 35))),
+        b: ((rand::thread_rng().gen_range(5, 15))),
     };
 
+    // Returns an array consisting of all of the color variants + darkness modifier.
     let colors = [
         light_wall_color,
         light_wall_variant_one,
@@ -135,6 +152,7 @@ pub fn gen_colors() -> [Color; 7] {
         light_ground_variant_two,
         dark_modifier,
         ];
+
     colors
 }
 
@@ -143,6 +161,11 @@ pub fn render_map(
     map: &mut Map,
     frames: u32,
 ) {
+    // Functions the same as the regular map rendering, although it has some differences.
+    // Always shows all tiles.
+    // Also shows the map for a short period of time, determined by the "frames" variable.
+    // It should only be used during map gen, to visualize what the algorithm is doing.
+    tcod.fov.compute_fov(1, 1, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
 
     for _ in 1..frames {
 

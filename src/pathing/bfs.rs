@@ -1,127 +1,200 @@
 use crate::environment::{ Map, MAP_WIDTH, MAP_HEIGHT };
-
-use crate::Point;
-
-use std::collections::HashMap;
+use crate::environment::map::tiles::{ Tile };
 
 #[derive(Debug)]
-struct Queue {
-    elements: Vec<Point>,
+pub struct Broadfs {
+    pub nodes: Vec<Node>,
+    frontier: Vec<Node>,
+    path: Vec<Node>,
 }
 
-impl Queue {
-    fn new(start: Point) -> Queue {
-        Queue {
-            elements: vec![start],
+impl Broadfs {
+    pub fn new() -> Broadfs {
+        let mut bfs = Broadfs {
+            nodes: Vec::new(),
+            frontier: Vec::new(),
+            path: Vec::new(),
+        };
+        for x in 0..MAP_WIDTH {
+            for y in 0..MAP_HEIGHT {
+                bfs.nodes.push(Node::new(x as u32, y as u32));
+            }
         }
-    }
-    fn get(&mut self) -> Point {
-        self.elements.remove(self.elements.len() - 1)
-    }
-    fn put(&mut self, new: Point) {
-        self.elements.push(new);
-    }
-}
-
-fn neighbors(map: &Map, home: Point) -> Vec<Point> {
-    let mut neighbors: Vec<Point> = vec![];
-    let (home_x, home_y) = home;
-
-    if 0 < home_y - 1
-    && !map[home_x as usize][(home_y - 1) as usize].wall {
-//        println!("Up");
-        let up: Point = (home_x, home_y - 1);
-        neighbors.push(up);
+        bfs
     }
 
-    if MAP_HEIGHT as u32 > home_y + 1
-    && !map[home_x as usize][(home_y + 1) as usize].wall {
-//        println!("Down");
-        let down: Point = (home_x, home_y + 1);
-        neighbors.push(down);
-    }
+    pub fn search(
+        &mut self,
+        map: &mut Map,
+        start: (u32, u32),
+        goal: Option<(u32, u32)>,
+    ) {
+        let start_node = Node::new(start.0, start.1);
+        self.visit(start_node);
+        self.frontier.push(start_node);
 
-    if 0 < home_x - 1
-    && !map[(home_x - 1) as usize][home_y as usize].wall {
-//        println!("Left");
-        let left: Point = (home_x - 1, home_y);
-        neighbors.push(left);
-    }
-
-    if MAP_WIDTH as u32 > home_x + 1
-    && !map[(home_x + 1) as usize][home_y as usize].wall {
-//        println!("Right");
-        let right: Point = (home_x + 1, home_y);
-        neighbors.push(right);
-    }
-
-    if MAP_WIDTH as u32 > home_x + 1
-    && MAP_HEIGHT as u32 > home_y + 1
-    && !map[(home_x + 1) as usize][(home_y + 1) as usize].wall {
-        let right_down: Point = (home_x + 1, home_y + 1);
-        neighbors.push(right_down);
-    }
-
-    if MAP_WIDTH as u32 > home_x + 1
-    && 0 < home_y - 1
-    && !map[(home_x + 1) as usize][(home_y - 1) as usize].wall {
-        let right_up: Point = (home_x + 1, home_y - 1);
-        neighbors.push(right_up);
-    }
-
-    if 0 < home_x - 1
-    && MAP_HEIGHT as u32 > home_y + 1
-    && !map[(home_x - 1) as usize][(home_y + 1) as usize].wall {
-        let left_down: Point = (home_x - 1, home_y + 1);
-        neighbors.push(left_down);
-    }
-
-    if 0 < home_x - 1
-    && 0 < home_y - 1
-    && !map[(home_x - 1) as usize][(home_y - 1) as usize].wall {
-        let left_up: Point = (home_x - 1, home_y - 1);
-        neighbors.push(left_up);
-    }
-
-
-
-//    println!("{}", neighbors.len());
-
-    neighbors
-}
-
-pub fn broad_first_search(map: &mut Map, start: Point) -> HashMap<Point, Point> {
-    let mut frontier = Queue::new(start);
-    let mut came_from: HashMap<Point, Point> = HashMap::new();
-    came_from.insert(start, start);
-
-    while frontier.elements.len() > 0 {
-        let current_point = frontier.get(); // Pulls from the top of the frontier stack
-        for next in neighbors(map, current_point) { // Searches surrounding points
-            // If neighbor is in visited vetor, it's discarded.
-            // Otherwise, it gets added to the visited vector, and added to bottom of frontier stack
-            match came_from.keys().find(|found| **found == next) {
-                None => {
-                    frontier.put(next);
-                    came_from.insert(next, current_point);
-                },
-                Some(_) => {},
+        while !self.frontier.is_empty() {
+            let current = self.frontier.remove(0);
+            if let Some(g) = goal {
+                if g.0 == current.x && g.1 == current.y {
+                    break
+                }
+            }
+            for next in self.get_neighbors(current, map) {
+                let (x, y) = next;
+                match self.get_node(x, y) {
+                    Some(node) => {
+                        self.from_set(node, current);
+                        self.expand_frontier(node);
+                    },
+                    None => {},
+                }
             }
         }
     }
 
-    came_from
+    fn expand_frontier(&mut self, node: Node) {
+        let (x, y) = node.get_xy();
+        match self.get_node(x, y) {
+            Some(n) => {
+                self.visit(n);
+                self.frontier.push(n);
+            }
+            None => {},
+        }
+    }
+
+    fn get_node(&self, x: u32, y: u32) -> Option<Node> {
+        let indexed = self.nodes.iter().enumerate();
+        for (_, node) in indexed {
+            if node.x == x && node.y == y {
+                return Some(*node)
+            }
+        }
+        None
+    }
+
+    fn visit(&mut self, node: Node) {
+        let mut node_index = 0;
+        let indexed = self.nodes.iter().enumerate();
+        for (id, searching) in indexed {
+            if searching.x == node.x && searching.y == node.y {
+                node_index = id;
+            }
+        }
+        self.nodes[node_index].visit();
+    }
+
+    fn from_set(&mut self, node: Node, from: Node) {
+        let mut node_index = 0;
+        let indexed = self.nodes.iter().enumerate();
+        for (id, searching) in indexed {
+            if searching.x == node.x && searching.y == node.y {
+                node_index = id;
+            }
+        }
+        self.nodes[node_index].comes_from(from.get_xy());
+    }
+
+    pub fn breadcrumb(&mut self, start: (u32, u32), goal: Option<(u32, u32)>) {
+        self.path.clear();
+        if let Some(goal) = goal {
+            let goal_node = self.get_node(goal.0, goal.1).unwrap();
+            let start_node = self.get_node(start.0, start.1).unwrap();
+            let mut current = goal_node;
+            while !(current.x == start_node.x && current.y == start_node.y) {
+                self.path.push(current);
+                match self.get_node(current.comes_from.0, current.comes_from.1) {
+                    Some(next) => current = next,
+                    None => {},
+                }
+            }
+        }
+    }
+
+    fn get_neighbors(&self, node: Node, map: &Map) -> Vec<(u32, u32)> {
+        let (x, y) = (node.x, node.y);
+        let mut neighbors: Vec<(u32, u32)> = vec![];
+
+        if (x - 1) > 0 &&
+        !map[(x - 1) as usize][y as usize].wall {
+            match self.get_node(node.x - 1, node.y) {
+                Some(neighbor) => if !neighbor.visited {
+                    neighbors.push(neighbor.get_xy());
+                },
+                None => {},
+            }
+        }
+
+        if (x + 1) < (MAP_WIDTH - 1) as u32 &&
+        !map[(x + 1) as usize][y as usize].wall {
+            match self.get_node(node.x + 1, node.y) {
+                Some(neighbor) => if !neighbor.visited {
+                    neighbors.push(neighbor.get_xy());
+                },
+                None => {},
+            }
+        }
+
+        if (y - 1) > 0 &&
+        !map[x as usize][(y - 1) as usize].wall {
+            match self.get_node(node.x, node.y - 1) {
+                Some(neighbor) => if !neighbor.visited {
+                    neighbors.push(neighbor.get_xy());
+                },
+                None => {},
+            }
+        }
+
+        if (y + 1) < (MAP_HEIGHT - 1) as u32 &&
+        !map[x as usize][(y + 1) as usize].wall {
+            match self.get_node(node.x, node.y + 1) {
+                Some(neighbor) => if !neighbor.visited {
+                    neighbors.push(neighbor.get_xy());
+                },
+                None => {},
+            }
+        }
+        neighbors
+    }
+
+    pub fn show_path(&self, map: &mut Map) {
+        for node in &self.path {
+            map[node.x as usize][node.y as usize] = Tile::path();
+        }
+    }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct Node {
+    pub x: u32,
+    pub y: u32,
+    pub visited: bool,
+    comes_from: (u32, u32),
+}
 
+impl Node {
+    fn new(x: u32, y: u32) -> Node {
+        Node {
+            x,
+            y,
+            visited: false,
+            comes_from: (x, y),
+        }
+    }
 
+    fn comes_from(&mut self, previous: (u32, u32)) {
+        if !self.visited {
+            let (x, y) = previous;
+            self.comes_from = (x, y);
+        }
+    }
 
-/*
-MAKE A VECTOR OF THE START POINTS FOR THE DRUNK WALK
-PUT CORRIDORS BETWEEN THEM
-BAM, FIXED IT.
+    pub fn get_xy(&self) -> (u32, u32) {
+        (self.x, self.y)
+    }
 
-CHANGE THE CULL TILE ALGORITHM, SO IT JUST SEARCHES THROUGH THE FOUND TILES MAP
-IF TILE ISNT FOUND, MAKE THE TILE A WALL.
-REMOVE THE TILE ELEMENT FOUND.
-*/
+    fn visit(&mut self) {
+        self.visited = true;
+    }
+}

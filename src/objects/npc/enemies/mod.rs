@@ -4,12 +4,14 @@ pub mod traits;
 use traits::get_trait;
 use enemy_list::get_monster;
 
+use crate::environment::MapTheme;
 use crate::objects::Character;
 use super::ai::*;
 use super::*;
 
 use rand::Rng;
 
+// Creates a new, empty, generic enemy
 impl Object {
     fn new_enemy(x: i32, y: i32, char: char, color: Color, name: &str, blocks: bool, corpse_type: &str) -> Character {
         Character {
@@ -33,6 +35,7 @@ impl Object {
     }
 }
 
+// Function to randomly assign attribute bonuses as a monster levels up.
 pub fn monster_level_up(mut fighter: &mut Fighter) {
     let rng = rand::thread_rng().gen_range(0, 3);
     match rng {
@@ -46,10 +49,11 @@ pub fn monster_level_up(mut fighter: &mut Fighter) {
     }
 }
 
-pub fn generate_monster(x: i32, y: i32, tier: i32, level: u32) -> Character {
+// Creates a new monster by pulling from random characteristics.
+pub fn generate_monster(x: i32, y: i32, tier: i32, level: u32, theme: MapTheme) -> Character {
 
     // Selects random base monster and trait.
-    let enemy_trait = get_trait(tier);
+    let enemy_trait = get_trait(theme, tier);
     let mut monster = get_monster(x, y, level, tier);
 
     // Changes base monster variables to reflect the trait.

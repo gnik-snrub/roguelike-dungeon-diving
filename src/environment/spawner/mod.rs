@@ -4,7 +4,7 @@ use character_spawns::{ room_characters, no_room_characters };
 pub mod item_spawns;
 use item_spawns::{ room_items, no_room_items };
 
-use crate::environment::{ Map, MAP_WIDTH, MAP_HEIGHT };
+use crate::environment::{ Map, MAP_WIDTH, MAP_HEIGHT, MapTheme };
 use crate::environment::map::Rect;
 use crate::objects::{ Object, Character };
 
@@ -18,7 +18,8 @@ pub fn rooms_spawner(
     items: &mut HashMap<i32, Object>,
     map: &Map,
     characters: &mut Vec<Character>,
-    level: u32
+    level: u32,
+    theme: MapTheme,
 ) {
     // Ensures that there are no existing entities in the character, or item collections.
     characters.clear();
@@ -28,7 +29,7 @@ pub fn rooms_spawner(
     let mut item_counter = 1;
 
     for room in rooms {
-        room_characters(*room, &map, characters, level);
+        room_characters(*room, &map, characters, level, theme);
         room_items(*room, items, &map, characters, &mut item_counter, level);
     }
 
@@ -41,7 +42,8 @@ pub fn no_rooms_spawner(
     items: &mut HashMap<i32, Object>,
     map: &Map,
     characters: &mut Vec<Character>,
-    level: u32
+    level: u32,
+    theme: MapTheme,
 ) {
     // Ensures that there are no existing entities in the character, or item collections.
     characters.clear();
@@ -50,7 +52,7 @@ pub fn no_rooms_spawner(
     // Keeps track of total items spawned on a map.
     let mut item_counter = 1;
 
-    no_room_characters(&map, characters, level);
+    no_room_characters(&map, characters, level, theme);
     no_room_items(items, &map, characters, &mut item_counter, level);
 
     let mut stairs_placed = true;
@@ -62,6 +64,31 @@ pub fn no_rooms_spawner(
             create_stairs(items, x, y);
             stairs_placed = false;
         }
+    }
+}
+
+pub fn maze_spawner(
+    items: &mut HashMap<i32, Object>,
+    map: &Map,
+    characters: &mut Vec<Character>,
+    level: u32,
+    theme: MapTheme,
+) {
+    // Ensures that there are no existing entities in the character, or item collections.
+    characters.clear();
+    items.clear();
+
+    // Keeps track of total items spawned on a map.
+    let mut item_counter = 1;
+
+    no_room_characters(&map, characters, level, theme);
+    no_room_items(items, &map, characters, &mut item_counter, level);
+
+    match rand::thread_rng().gen_range(0, 4) {
+        0 => create_stairs(items, 1, 1),
+        1 => create_stairs(items, 1, 41),
+        2 => create_stairs(items, 79, 1),
+        _ => create_stairs(items, 79, 41),
     }
 }
 

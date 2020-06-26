@@ -15,9 +15,14 @@ pub enum Ai {
         previous_ai: Box<Ai>,
         num_turns: i32,
     },
+    Fear {
+        previous_ai: Box<Ai>,
+        num_turns: i32,
+    },
 }
 
 impl Object {
+    // Moves object towards another object.
     fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, characters: &mut [Character]) {
         // Vector from this object to the target, and the distance.
         let dx = target_x - characters[id].object.x;
@@ -31,23 +36,27 @@ impl Object {
         Object::move_by(id, dx, dy, map, characters);
     }
 
+    // Calculates distance between object, and another object.
     pub fn distance_to(&self, other: &Object) -> f32 {
         let dx = other.x - self.x;
         let dy = other.y - self.y;
         ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
     }
 
-    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, game: &mut Game, characters: &mut [Character], player: &mut Object) {
+    // Depending on the current AI status of the object, activates the relevant AI function.
+    pub fn ai_take_turn(monster_id: usize, tcod: &Tcod, game: &mut Game, characters: &mut Vec<Character>, player: &mut Object) {
         use Ai::*;
         if let Some(ai) = characters[monster_id].object.ai.take() {
             let new_ai = match ai {
                 Basic => Object::ai_basic(monster_id, tcod, game, characters, player),
                 Confused{previous_ai, num_turns} => Object::ai_confused(monster_id, tcod, game, characters, previous_ai, num_turns),
+                Fear{previous_ai, num_turns} => Object::ai_fear(monster_id, tcod, game, characters, previous_ai, num_turns),
             };
             characters[monster_id].object.ai = Some(new_ai);
         }
     }
 
+    // Because the AI state can change, the different AI types return an AI to insert into the object.
     fn ai_basic(monster_id: usize, tcod: &Tcod, game: &mut Game, characters: &mut [Character], player: &mut Object) -> Ai {
         // A basic monster taking its turn normally.
         // If you can see it, it can see you too.
@@ -65,6 +74,7 @@ impl Object {
         Ai::Basic
     }
 
+    // Returns AI confused, until the confusion wears off, then it returns its previous AI.
     fn ai_confused(
         monster_id: usize,
         _tcod: &Tcod,
@@ -97,11 +107,38 @@ impl Object {
         }
     }
 
-    fn monster_attack(&self, game: &mut Game, mut player: &mut Object) {
+    // Returns AI confused, until the confusion wears off, then it returns its previous AI.
+    fn ai_fear(
+        monster_id: usize,
+        _tcod: &Tcod,
+        game: &mut Game,
+        characters: &mut [Character],
+        previous_ai: Box<Ai>,
+        num_turns: i32,
+    ) -> Ai {
+        if num_turns >= 0 {
+            // Still scared ...
+            // Stay frozen
+            Ai::Fear {
+                previous_ai: previous_ai,
+                num_turns: num_turns - 1,
+            }
+        } else {
+            // Restore the previous AI, and delete this one.
+            game.messages.add(
+                format!("The {} is no longer scared!", characters[monster_id].object.name),
+                RED,
+            );
+            *previous_ai
+        }
+    }
+
+    // Just a simple attack on another object
+    fn monster_attack(&self, game: &mut Game, mut other: &mut Object) {
         let mut rng = rand::thread_rng();
         let attack = (self.fighter.map_or(1, |f| f.power)) as f32 + rng.gen_range(-1.0, 1.0);
-        let defense = (player.fighter.map_or(1, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
-        let mut level_mod = ((self.level - player.level) / 3) as f32;
+        let defense = (other.fighter.map_or(1, |f| f.defense)) as f32 + rng.gen_range(-1.0, 1.0);
+        let mut level_mod = ((self.level - other.level) / 3) as f32;
         if level_mod <= 0.0 { level_mod = 1.0; }
 
         let damage = ((attack * level_mod) - defense).round() as i32;
@@ -110,19 +147,21 @@ impl Object {
             game.messages.add(
                 format!(
                     "{} attacks {} dealing {} damage.",
-                    self.name, player.name, damage
+                    self.name, other.name, damage
                 ),
                 self.color,
             );
-            Object::player_damage(damage, game, &mut player);
+            Object::player_damage(damage, game, &mut other);
         } else {
             game.messages.add(
                 format!(
                     "{} attacks {} but it has no effect!",
-                    self.name, player.name
+                    self.name, other.name
                 ),
                 WHITE,
             );
         }
     }
+
+
 }
