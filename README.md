@@ -13,3 +13,12 @@ https://tomassedovic.github.io/roguelike-tutorial/index.html
 - ✓ Create more color variance in the world tiles.
 - x Add in some sort of scoring system (Track deepest crawl / fastest crawl / most kills / etc...)
 - x Give the player character the ability to steal, and upgrade the powers of monster he slays.
+
+## Controls:
+- Num1 <-> Num9: Movement + attacking
+- "g": Grab an item
+- "i": Inventory
+- "c": Charater stats
+- "d": Drop an item
+- "<": Descend stairs
+- Mouse: View entity names + spell targeting.
