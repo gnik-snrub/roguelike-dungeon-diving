@@ -44,9 +44,9 @@ pub fn render_all(
             }
 
             // If a tiles "explored" variable is true, it will become visible.
-//            if *explored {
+            if *explored {
                 tcod.con.set_char_background(x, y, color, BackgroundFlag::Set);
-//            }
+            }
         }
     }
 

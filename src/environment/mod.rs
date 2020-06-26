@@ -51,7 +51,7 @@ const MAX_ROOMS: i32 = 18;
 const GROUND_COLOR: usize = 3;
 
 // Bool value to decide whether or not the map generation should be rendered or not.
-const RENDER: bool = true;
+const RENDER: bool = false;
 
 // Map type definition.
 pub type Map = Vec<Vec<Tile>>;

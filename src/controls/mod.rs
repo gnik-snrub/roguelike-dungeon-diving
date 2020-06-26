@@ -99,7 +99,7 @@ pub fn handle_keys(
             }
         },
 
-        ( Key { code: Text, .. }, "I", true) => {
+        ( Key { code: Text, .. }, "i", true) => {
             // Show the inventory.
             let inventory_index = inventory_menu(
                 player,
@@ -112,7 +112,7 @@ pub fn handle_keys(
             TookTurn
         },
 
-        ( Key { code: Text, .. }, "C", true) => {
+        ( Key { code: Text, .. }, "c", true) => {
             // Displays character information.
             let level = player.object.level;
             let level_up_xp = LEVEL_UP_BASE + player.object.level * LEVEL_UP_FACTOR;
@@ -134,7 +134,7 @@ Defense: {}",
             DidntTakeTurn
         },
 
-        ( Key { code: Text, .. }, "D", true) => {
+        ( Key { code: Text, .. }, "d", true) => {
             // Show the inventory. If an item is selected, drop it.
             let inventory_index = inventory_menu(
                 &player, "Press a listed key to drop an item, or another key to cancel.\n",
@@ -146,7 +146,7 @@ Defense: {}",
             DidntTakeTurn
         },
 
-        // DEBUG-KEYS
+/*        // DEBUG-KEYS
         ( Key { code: Text, .. }, "z", true) => { // Prints the list of items on the floor.
             let mut char_count = 0;
             for character in characters {
@@ -175,15 +175,15 @@ Defense: {}",
             }
             DidntTakeTurn
         }
-
+*/
 //      This code is temporarily removed, as it breaks the laptop on which it is being written.
 //      Note: The fact that it breaks this specific laptop is proof that it functions correctly.
-//        ( Key { code: Enter, alt: true, .. }, _, _, ) => {
+        ( Key { code: Enter, alt: true, .. }, _, _, ) => {
             // Alt+Enter: Toggles fullscreen
-//            let fullscreen = tcod.root.is_fullscreen();
-//            tcod.root.set_fullscreen(!fullscreen);
-//            DidntTakeTurn
-//        },
+            let fullscreen = tcod.root.is_fullscreen();
+            tcod.root.set_fullscreen(!fullscreen);
+            DidntTakeTurn
+        },
         ( Key { code: Escape, .. }, _, _) => Exit, // Exits game
 
         _ => DidntTakeTurn,
