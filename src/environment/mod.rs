@@ -332,7 +332,7 @@ pub fn make_map(
             // Sorts the point vector.
             room_sorter(&mut points);
 
-            joiner(&mut points, &mut map, &colors, tcod, RENDER);
+            joiner(&mut points, &mut map, &colors, tcod, RENDER); // Joins the different segments of the map together.
             no_rooms_spawner(&mut items, &map, &mut characters, level, map_theme);
         },
 
@@ -342,6 +342,11 @@ pub fn make_map(
         },
 
         MapType::Maze => {
+            if rand::random() { // Opens some space up in the maze.
+                rectangles(&mut rects, &mut map, &colors, &mut player, tcod, RENDER); // Scatters some rooms throughout
+            } else {
+                caved_in(&mut map, &colors, tcod, RENDER); // Creates a large open chunk in the middle of the maze
+            }
             maze_spawner(&mut items, &map, &mut characters, level, map_theme);
         },
     }
