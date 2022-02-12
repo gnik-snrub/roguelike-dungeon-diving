@@ -1,4 +1,4 @@
-# Automatic-funicular
+# Roguelike Dungeon Diving
 
 My attempt at following the guide on creating a Roguelike game in Rust featured here
 
